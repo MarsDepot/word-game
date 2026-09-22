@@ -1,0 +1,6 @@
+{
+  "name": "仙境词语物语 - 背单词肉鸽RPG",
+  "description": "小清新仙境传说风格的背单词肉鸽RPG。集地图选词包、答题战斗、全词库文本批量导入导出、沉浸式翻阅复习闪卡、装备掉落、属性加点、卡片收集、BOSS挑战、卡普拉生词回炉于一体，支持多用户独立档案切换与自适应背景音乐。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
