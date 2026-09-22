@@ -497,9 +497,16 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             ← 撤退
           </button>
           <div className="flex flex-col">
-            <span className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-              {map.name}
-              {isBossWave && <span className="bg-red-500 text-white text-[10px] md:text-xs px-1.5 py-0.2 rounded-full font-extrabold animate-pulse">BOSS战</span>}
+            <span className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-100 flex items-baseline gap-1 whitespace-nowrap">
+              <span>{map.name.replace(/\s*\(.*?\)/, '')}</span>
+              <span className="text-[10px] md:text-xs font-normal text-slate-400 dark:text-slate-500 font-sans">
+                {map.name.match(/\((.*?)\)/)?.[0] || ''}
+              </span>
+              {isBossWave && (
+                <span className="bg-red-500 text-white text-[9px] md:text-[10px] px-1.5 py-0.2 rounded-full font-extrabold animate-pulse ml-0.5">
+                  BOSS战
+                </span>
+              )}
             </span>
             <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">
               波次: {waveIndex + 1} / {totalWaves}

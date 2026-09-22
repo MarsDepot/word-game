@@ -97,6 +97,15 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
     onSelectMap(dynamicMap);
   };
 
+  // Helper to separate Chinese name and English subtitle
+  const parseMapName = (rawName: string) => {
+    const match = rawName.match(/^(.*?)\s*\((.*?)\)$/);
+    if (match) {
+      return { zh: match[1], en: `(${match[2]})` };
+    }
+    return { zh: rawName, en: '' };
+  };
+
   return (
     <div className="flex-1 flex flex-col p-3.5 md:p-6 overflow-y-auto space-y-4 pb-20">
       {/* Top Banner - Single Unified Map Entrance */}
@@ -232,12 +241,17 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
                 <div>
                   {/* Card Header */}
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="text-xs font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 shrink-0">
                         MAP 0{def.index}
                       </span>
-                      <h4 className="font-black text-base text-slate-850 dark:text-slate-100">
-                        {def.name}
+                      <h4 className="font-black text-base text-slate-850 dark:text-slate-100 flex items-baseline gap-1 whitespace-nowrap min-w-0">
+                        <span>{parseMapName(def.name).zh}</span>
+                        {parseMapName(def.name).en && (
+                          <span className="text-xs font-normal text-slate-400 dark:text-slate-400 font-sans tracking-tight">
+                            {parseMapName(def.name).en}
+                          </span>
+                        )}
                       </h4>
                     </div>
 
@@ -291,10 +305,15 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-5 border-2 border-emerald-500/40 dark:border-emerald-600/40 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xl">⚔️</span>
-              <h3 className="font-black text-base md:text-lg text-slate-850 dark:text-slate-100">
-                出战准备 · {selectedDef.name}
+            <div className="flex items-center space-x-2 min-w-0 flex-nowrap">
+              <span className="text-lg md:text-xl shrink-0">⚔️</span>
+              <h3 className="font-black text-sm sm:text-base md:text-lg text-slate-850 dark:text-slate-100 flex items-baseline gap-1.5 whitespace-nowrap overflow-hidden">
+                <span>出战准备 · {parseMapName(selectedDef.name).zh}</span>
+                {parseMapName(selectedDef.name).en && (
+                  <span className="text-[11px] sm:text-xs font-normal text-slate-400 dark:text-slate-400 font-sans tracking-tight">
+                    {parseMapName(selectedDef.name).en}
+                  </span>
+                )}
               </h3>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -348,11 +367,20 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
         {/* Primary Action Button: Enter Battle */}
         <button
           onClick={handleLaunchBattle}
-          className="w-full py-3.5 md:py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-2xl font-black text-sm md:text-base tracking-wide shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2 active:scale-98"
+          className="w-full py-3.5 md:py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-2xl font-black text-xs sm:text-sm md:text-base tracking-wide shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-1.5 active:scale-98 whitespace-nowrap overflow-hidden px-3"
         >
-          <Swords className="w-5 h-5" />
-          <span>开启讨伐 · 进军 {selectedDef.name} ({selectionPreview.words.length} 词)</span>
-          <ChevronRight className="w-4 h-4 ml-1" />
+          <Swords className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+          <span className="flex items-baseline space-x-1 truncate">
+            <span>开启讨伐 · 进军</span>
+            <strong className="font-black">{parseMapName(selectedDef.name).zh}</strong>
+            {parseMapName(selectedDef.name).en && (
+              <span className="text-[11px] md:text-xs font-normal opacity-85 font-sans">
+                {parseMapName(selectedDef.name).en}
+              </span>
+            )}
+            <span className="font-bold">({selectionPreview.words.length} 词)</span>
+          </span>
+          <ChevronRight className="w-4 h-4 shrink-0 ml-0.5" />
         </button>
       </div>
     </div>
