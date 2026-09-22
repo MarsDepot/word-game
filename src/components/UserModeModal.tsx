@@ -424,7 +424,7 @@ export const UserModeModal: React.FC<UserModeModalProps> = ({
         </div>
 
         {/* Footer info */}
-        <div className="p-3.5 bg-slate-50 dark:bg-slate-850 border-t border-slate-200/90 dark:border-slate-800 text-center">
+        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200/90 dark:border-slate-800 text-center">
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
             💡 提示：所有角色档案保存在本地浏览器中，切换角色即刻载入该角色的独立学习与配装数据。
           </p>

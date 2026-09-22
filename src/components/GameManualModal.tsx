@@ -81,14 +81,14 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
         </div>
 
         {/* Navigation Tabs */}
-        <div className="px-3 md:px-6 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 flex space-x-1 md:space-x-2 overflow-x-auto no-scrollbar">
+        <div className="px-3 md:px-6 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/70 flex space-x-1 md:space-x-2 overflow-x-auto no-scrollbar">
           <button
             id="tab-manual-syllabus"
             onClick={() => handleTabChange('syllabus')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
               activeTab === 'syllabus'
                 ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/70'
             }`}
           >
             <BookMarked className="w-3.5 h-3.5" />
@@ -101,7 +101,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
               activeTab === 'battle'
                 ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/70'
             }`}
           >
             <Swords className="w-3.5 h-3.5" />
@@ -114,7 +114,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
               activeTab === 'stats'
                 ? 'bg-sky-500 text-white shadow-sm shadow-sky-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/70'
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
@@ -127,7 +127,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
               activeTab === 'furnace'
                 ? 'bg-purple-500 text-white shadow-sm shadow-purple-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/70'
             }`}
           >
             <Flame className="w-3.5 h-3.5" />
@@ -140,7 +140,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
               activeTab === 'shortcuts'
                 ? 'bg-rose-500 text-white shadow-sm shadow-rose-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/70'
             }`}
           >
             <Keyboard className="w-3.5 h-3.5" />
@@ -167,70 +167,85 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                 </div>
               </div>
 
-              {/* Mastery Definition Cards */}
+              {/* Mastery Definition Cards with Color Badges */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20">
-                  <div className="flex items-center space-x-1.5 font-bold text-emerald-800 dark:text-emerald-300 text-xs mb-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>已掌握 (全知全会)</span>
+                <div className="p-3 rounded-xl border border-emerald-200/90 dark:border-emerald-800/80 bg-emerald-50/60 dark:bg-emerald-950/30">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center space-x-1.5 font-bold text-emerald-800 dark:text-emerald-300 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                      <span>已掌握 (全知全会)</span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded font-bold bg-emerald-500 text-white shadow-2xs">
+                      绿标
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                    在战斗出题中<strong>连续 5 次出现都正确答对</strong>，化为深层长期记忆。
+                    单词宝典中呈<strong>浅绿底色与绿标</strong>。在战斗出题中<strong>连续 5 次出现都正确答对</strong>，化为深层长期记忆。
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20">
-                  <div className="flex items-center space-x-1.5 font-bold text-amber-800 dark:text-amber-300 text-xs mb-1">
-                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span>熟悉 (仍需强化)</span>
+                <div className="p-3 rounded-xl border border-amber-200/90 dark:border-amber-800/80 bg-amber-50/60 dark:bg-amber-950/30">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center space-x-1.5 font-bold text-amber-800 dark:text-amber-300 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                      <span>熟悉 (仍需强化)</span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded font-bold bg-amber-500 text-white shadow-2xs">
+                      黄标
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                    在战斗中<strong>出现过但曾做错</strong>，或连对尚未达到 5 次，需要持续巩固。
+                    单词宝典中呈<strong>橙黄底色与黄标</strong>。在战斗中<strong>出现过但曾做错</strong>，或连对尚未达 5 次，需持续巩固。
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-950/20">
-                  <div className="flex items-center space-x-1.5 font-bold text-sky-800 dark:text-sky-300 text-xs mb-1">
-                    <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-                    <span>全新 (未曾出题)</span>
+                <div className="p-3 rounded-xl border border-sky-200/90 dark:border-sky-800/80 bg-sky-50/60 dark:bg-sky-950/30">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center space-x-1.5 font-bold text-sky-800 dark:text-sky-300 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></span>
+                      <span>全新 (未曾出题)</span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded font-bold bg-sky-500 text-white shadow-2xs">
+                      蓝标
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                    <strong>一次都未曾在战斗中出现过</strong>的陌生生词，等待勇敢者拓词开拓。
+                    单词宝典中呈<strong>天蓝底色与蓝标</strong>。<strong>一次都未曾在战斗中出现过</strong>的陌生生词，等待勇敢者开拓。
                   </p>
                 </div>
               </div>
 
               {/* Map Types & Ratios */}
-              <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 space-y-2">
+              <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 space-y-2">
                 <h4 className="font-black text-xs md:text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                   <Compass className="w-4 h-4 text-emerald-500" />
                   <span>四大出战地图类型与题库配比算法</span>
                 </h4>
 
                 <div className="space-y-2 text-xs">
-                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    <strong className="text-emerald-600 dark:text-emerald-400">Map 1 索拉斯 (Solace)：</strong>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700">
+                    <strong className="text-emerald-600 dark:text-emerald-400 font-bold">Map 1 索拉斯 (Solace)：</strong>
                     <span className="text-slate-600 dark:text-slate-300 ml-1">
                       10% 已掌握 + 20% 熟悉 + 70% 全新（首次使用或尚无历史记录时，自动 100% 全新出题）。
                     </span>
                   </div>
 
-                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    <strong className="text-sky-600 dark:text-sky-400">Map 2 奎灵那斯提 (Qualinesti)：</strong>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700">
+                    <strong className="text-sky-600 dark:text-sky-400 font-bold">Map 2 奎灵那斯提 (Qualinesti)：</strong>
                     <span className="text-slate-600 dark:text-slate-300 ml-1">
                       100% 全新单词！专注攻坚生词池，快速建立初识词汇量。
                     </span>
                   </div>
 
-                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    <strong className="text-amber-600 dark:text-amber-400">Map 3 圣克仙城 (Sanction)：</strong>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700">
+                    <strong className="text-amber-600 dark:text-amber-400 font-bold">Map 3 圣克仙城 (Sanction)：</strong>
                     <span className="text-slate-600 dark:text-slate-300 ml-1">
                       30% 已掌握 + 70% 熟悉！专为查漏补缺设计的错题回炉高压炼金场。
                     </span>
                   </div>
 
-                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    <strong className="text-purple-600 dark:text-purple-400">Map 4 巨龙列岛 (Dragon Isles)：</strong>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700">
+                    <strong className="text-purple-600 dark:text-purple-400 font-bold">Map 4 巨龙列岛 (Dragon Isles)：</strong>
                     <span className="text-slate-600 dark:text-slate-300 ml-1">
                       随机比例全池抽选！模拟真实考场全真随机模考。
                     </span>
@@ -239,17 +254,17 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
               </div>
 
               {/* Per Round Setting & Import Format */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs space-y-1.5">
                 <div className="font-bold text-slate-700 dark:text-slate-200">
                   ⚙️ 自定义题量与标准导入格式：
                 </div>
-                <p className="text-slate-600 dark:text-slate-400">
-                  1. <strong>题量自由配置</strong>：进入地图前可任意增减每局单词量（快捷预设 20/30/40/50 词等）。
+                <p className="text-slate-600 dark:text-slate-300">
+                  1. <strong>题量自由配置</strong>：进入地图前可任意增减每局单词量（快捷预设 20/40/60 词，支持每次增加或减少 10 词）。
                 </p>
-                <p className="text-slate-600 dark:text-slate-400">
+                <p className="text-slate-600 dark:text-slate-300">
                   2. <strong>单词本编辑与批量删除</strong>：可在“统一词库”中勾选批量删除、单条编辑或新建单词。
                 </p>
-                <p className="text-slate-600 dark:text-slate-400">
+                <p className="text-slate-600 dark:text-slate-300">
                   3. <strong>标准多行格式导入</strong>：支持“序号. 单词 [音标] (词性.) 中文意思 \n 例句: \n 译文:”完整格式无缝导入导出。
                 </p>
               </div>
@@ -306,13 +321,13 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
           {/* TAB 3: 六维属性配点 */}
           {activeTab === 'stats' && (
             <div className="space-y-3.5 animate-in fade-in-50 duration-150">
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-300">
                 每次升级或击败 BOSS 将获得自由属性点数 (Stat Points)，可在「加点配装」界面自由定制培养流派：
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {/* STR */}
-                <div className="p-3 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/60 flex items-start space-x-2.5">
+                <div className="p-3 rounded-xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200/90 dark:border-rose-900/60 flex items-start space-x-2.5">
                   <div className="w-7 h-7 rounded-lg bg-rose-500 text-white font-black text-xs flex items-center justify-center shrink-0">
                     STR
                   </div>
@@ -320,14 +335,14 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                     <div className="font-bold text-rose-900 dark:text-rose-200 text-xs">
                       力量 · 物理斩击威力
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                       每点提升 <strong className="text-rose-600 dark:text-rose-400">+2 攻击力 (ATK)</strong>。大幅提升单次答对对怪物的生命扣减，更快击倒高血量 BOSS。
                     </div>
                   </div>
                 </div>
 
                 {/* AGI */}
-                <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/60 flex items-start space-x-2.5">
+                <div className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-900/60 flex items-start space-x-2.5">
                   <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0">
                     AGI
                   </div>
@@ -335,14 +350,14 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                     <div className="font-bold text-emerald-900 dark:text-emerald-200 text-xs">
                       敏捷 · 答题时间与闪避
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                       每点延长 <strong className="text-emerald-600 dark:text-emerald-400">+0.15 秒答题宽限</strong>，并提升受击时的闪避概率。慢热记词选手的福音！
                     </div>
                   </div>
                 </div>
 
                 {/* VIT */}
-                <div className="p-3 rounded-xl bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-900/60 flex items-start space-x-2.5">
+                <div className="p-3 rounded-xl bg-sky-50/60 dark:bg-sky-950/30 border border-sky-200/90 dark:border-sky-900/60 flex items-start space-x-2.5">
                   <div className="w-7 h-7 rounded-lg bg-sky-500 text-white font-black text-xs flex items-center justify-center shrink-0">
                     VIT
                   </div>
@@ -350,14 +365,14 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                     <div className="font-bold text-sky-900 dark:text-sky-200 text-xs">
                       体质 · 生命上限与防御
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                       每点提升 <strong className="text-sky-600 dark:text-sky-400">+25 最大生命值 (HP)</strong>，降低受到的伤害。极大增加挑战时的容错率。
                     </div>
                   </div>
                 </div>
 
                 {/* INT */}
-                <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/60 flex items-start space-x-2.5">
+                <div className="p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/90 dark:border-indigo-900/60 flex items-start space-x-2.5">
                   <div className="w-7 h-7 rounded-lg bg-indigo-500 text-white font-black text-xs flex items-center justify-center shrink-0">
                     INT
                   </div>
@@ -365,14 +380,14 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                     <div className="font-bold text-indigo-900 dark:text-indigo-200 text-xs">
                       智力 · 收益与升级加速
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                       提升每道题的 <strong className="text-indigo-600 dark:text-indigo-400">经验值与金币 Zeny 加成</strong>，大幅加快人物升级与买药成型速度。
                     </div>
                   </div>
                 </div>
 
                 {/* DEX */}
-                <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/60 flex items-start space-x-2.5">
+                <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-900/60 flex items-start space-x-2.5">
                   <div className="w-7 h-7 rounded-lg bg-amber-500 text-white font-black text-xs flex items-center justify-center shrink-0">
                     DEX
                   </div>
@@ -380,14 +395,14 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                     <div className="font-bold text-amber-900 dark:text-amber-200 text-xs">
                       灵巧 · 识破主动技能
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                       赋予战斗专属技能 <strong className="text-amber-600 dark:text-amber-400">「神圣识破」</strong>，每场战斗可主动使用，瞬间剔除一个错误干扰项！
                     </div>
                   </div>
                 </div>
 
                 {/* LUK */}
-                <div className="p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-900/60 flex items-start space-x-2.5">
+                <div className="p-3 rounded-xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/90 dark:border-purple-900/60 flex items-start space-x-2.5">
                   <div className="w-7 h-7 rounded-lg bg-purple-500 text-white font-black text-xs flex items-center justify-center shrink-0">
                     LUK
                   </div>
@@ -395,7 +410,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                     <div className="font-bold text-purple-900 dark:text-purple-200 text-xs">
                       幸运 · 暴击与掉宝率
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                       提升 <strong className="text-purple-600 dark:text-purple-400">+1% 物理暴击率</strong>，并大幅提高击杀魔物后掉落稀有魔物卡片的几率。
                     </div>
                   </div>
@@ -407,7 +422,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
           {/* TAB 4: 回炉错题库 */}
           {activeTab === 'furnace' && (
             <div className="space-y-3.5 animate-in fade-in-50 duration-150">
-              <div className="p-3.5 rounded-2xl bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/60 flex items-start space-x-2.5">
+              <div className="p-3.5 rounded-2xl bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200/90 dark:border-purple-900/60 flex items-start space-x-2.5">
                 <Flame className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-bold text-purple-950 dark:text-purple-200 text-sm">
@@ -419,25 +434,25 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                 </div>
               </div>
 
-              <div className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
-                <div className="flex items-start space-x-2">
+              <div className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-start space-x-2.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                   <div>
-                    <strong>单词闪卡翻转 (Flashcard)：</strong>
+                    <strong className="text-slate-800 dark:text-slate-100">单词闪卡翻转 (Flashcard)：</strong>
                     提供中英快速翻面、词性标注、全真音标及中考典型搭配，利用碎片时间高效温习。
                   </div>
                 </div>
-                <div className="flex items-start space-x-2">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-start space-x-2.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                   <div>
-                    <strong>高炉回炉精炼 (Furnace Quiz)：</strong>
+                    <strong className="text-slate-800 dark:text-slate-100">高炉回炉精炼 (Furnace Quiz)：</strong>
                     专门针对错题进行专项实战测试。每答对一次增加记忆熟练度，满熟练度后即可将错词移出熔炉。
                   </div>
                 </div>
-                <div className="flex items-start space-x-2">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-start space-x-2.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                   <div>
-                    <strong>词库导入与导出 (Import & Export)：</strong>
+                    <strong className="text-slate-800 dark:text-slate-100">词库导入与导出 (Import & Export)：</strong>
                     支持导出当前错题本为 JSON，或导入教师布置的中考特色强化生词包。
                   </div>
                 </div>
@@ -448,7 +463,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
           {/* TAB 5: 快捷键指南 */}
           {activeTab === 'shortcuts' && (
             <div className="space-y-3.5 animate-in fade-in-50 duration-150">
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-300">
                 PC 网页端或连接蓝牙键盘时，可使用以下无延迟快捷按键：
               </p>
 
@@ -458,16 +473,16 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                     答题选择选项 A / B / C / D
                   </span>
                   <div className="flex gap-1">
-                    <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs font-mono font-bold shadow-xs">
+                    <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded text-xs font-mono font-bold shadow-xs">
                       1
                     </kbd>
-                    <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs font-mono font-bold shadow-xs">
+                    <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded text-xs font-mono font-bold shadow-xs">
                       2
                     </kbd>
-                    <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs font-mono font-bold shadow-xs">
+                    <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded text-xs font-mono font-bold shadow-xs">
                       3
                     </kbd>
-                    <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs font-mono font-bold shadow-xs">
+                    <kbd className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded text-xs font-mono font-bold shadow-xs">
                       4
                     </kbd>
                   </div>
@@ -477,7 +492,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
                     使用「DEX 神圣识破」技能
                   </span>
-                  <kbd className="px-3 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs font-mono font-bold shadow-xs">
+                  <kbd className="px-3 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded text-xs font-mono font-bold shadow-xs">
                     Space 空格键
                   </kbd>
                 </div>
@@ -486,7 +501,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
                     关闭当前弹窗 / 说明书
                   </span>
-                  <kbd className="px-2.5 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs font-mono font-bold shadow-xs">
+                  <kbd className="px-2.5 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 rounded text-xs font-mono font-bold shadow-xs">
                     Esc
                   </kbd>
                 </div>
@@ -496,7 +511,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
         </div>
 
         {/* Footer */}
-        <div className="px-4 md:px-6 py-3 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-4 md:px-6 py-3 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <span className="text-[11px] text-slate-500 dark:text-slate-400">
             祝各位初中冒险者中考英语斩获满分！🌟
           </span>

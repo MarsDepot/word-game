@@ -192,15 +192,15 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
   return (
     <div className="flex-1 flex flex-col p-3 md:p-6 overflow-y-auto space-y-3.5 md:space-y-5 pb-20">
       {/* Top Banner & Quick Action Tools */}
-      <div className="bg-gradient-to-r from-slate-900 via-emerald-950/80 to-slate-900 rounded-3xl p-4 md:p-5 text-slate-100 shadow-xl border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-3xl p-4 md:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <span className="text-2xl">📚</span>
-            <h2 className="text-lg md:text-xl font-black tracking-tight text-white">
+            <h2 className="text-lg md:text-xl font-black tracking-tight">
               统一单词宝典 & RO卡片图鉴
             </h2>
           </div>
-          <p className="text-xs text-slate-300 font-medium">
+          <p className="text-xs text-emerald-100 font-medium">
             全本统一收录 {allCombinedWords.length} 词 · 已掌握 {masteryStats.mastered} 词 · 熟悉 {masteryStats.familiar} 词 · 全新 {masteryStats.new} 词
           </p>
         </div>
@@ -213,7 +213,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
               setEditingWord(null);
               setShowEditModal(true);
             }}
-            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs md:text-sm rounded-2xl shadow-md transition-all flex items-center space-x-1"
+            className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs md:text-sm rounded-2xl shadow-sm transition-all flex items-center space-x-1"
             title="添加单个新单词"
           >
             <Plus className="w-4 h-4" />
@@ -225,7 +225,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
               soundManager.playClick();
               setShowFlipReview(true);
             }}
-            className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs md:text-sm rounded-2xl shadow-md transition-all flex items-center space-x-1 hover:scale-102"
+            className="px-3 py-2 bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-xs md:text-sm rounded-2xl shadow-sm transition-all flex items-center space-x-1 hover:scale-102"
           >
             <RotateCw className="w-4 h-4" />
             <span>翻阅复习</span>
@@ -237,7 +237,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
               setImportExportInitialTab('export');
               setShowImportExport(true);
             }}
-            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-black text-xs md:text-sm rounded-2xl transition-all flex items-center space-x-1"
+            className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white font-black text-xs md:text-sm rounded-2xl backdrop-blur-xs transition-all flex items-center space-x-1"
             title="导入导出单词文本"
           >
             <FileText className="w-4 h-4" />
@@ -247,7 +247,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
       </div>
 
       {/* Main Tab Switcher */}
-      <div className="bg-slate-900 p-1.5 rounded-2xl border border-slate-800 shadow-md flex space-x-1.5 max-w-xl mx-auto w-full">
+      <div className="bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex space-x-1.5 max-w-xl mx-auto w-full">
         <button
           onClick={() => {
             soundManager.playClick();
@@ -256,7 +256,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
           className={`flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
             activeTab === 'words'
               ? 'bg-emerald-600 text-white shadow-xs'
-              : 'text-slate-400 hover:text-slate-200'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <BookOpen className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -270,7 +270,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
           className={`flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
             activeTab === 'cards'
               ? 'bg-purple-600 text-white shadow-xs'
-              : 'text-slate-400 hover:text-slate-200'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -285,13 +285,13 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
           <div className="flex flex-col gap-2.5 max-w-3xl mx-auto w-full">
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="text"
                   placeholder="搜索英文单词、中文释义或例句..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-2xl pl-10 pr-3 py-2.5 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 shadow-xs"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl pl-10 pr-3 py-2.5 text-xs md:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
 
@@ -304,8 +304,8 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                 }}
                 className={`px-3.5 py-2.5 rounded-2xl text-xs md:text-sm font-bold border transition-all flex items-center justify-center space-x-1.5 shrink-0 ${
                   batchMode
-                    ? 'bg-rose-950/60 border-rose-800 text-rose-300'
-                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white'
+                    ? 'bg-rose-50 border-rose-300 text-rose-700 dark:bg-rose-950/60 dark:border-rose-800 dark:text-rose-300'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300'
                 }`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -319,8 +319,8 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                 onClick={() => setMasteryFilter('all')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   masteryFilter === 'all'
-                    ? 'bg-slate-700 text-white shadow-xs'
-                    : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-750'
+                    ? 'bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                 }`}
               >
                 全部 ({allCombinedWords.length})
@@ -331,7 +331,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
                   masteryFilter === 'mastered'
                     ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-slate-800 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-950/40'
+                    : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -343,7 +343,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
                   masteryFilter === 'familiar'
                     ? 'bg-amber-600 text-white shadow-xs'
-                    : 'bg-slate-800 text-amber-400 border border-amber-800/60 hover:bg-amber-950/40'
+                    : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-50 dark:hover:bg-amber-950/40'
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -355,7 +355,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
                   masteryFilter === 'new'
                     ? 'bg-sky-600 text-white shadow-xs'
-                    : 'bg-slate-800 text-sky-400 border border-sky-800/60 hover:bg-sky-950/40'
+                    : 'bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-50 dark:hover:bg-sky-950/40'
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-sky-500" />
@@ -365,20 +365,20 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
 
             {/* Batch Operation Action Bar */}
             {batchMode && (
-              <div className="bg-rose-950/40 border border-rose-900/60 p-2.5 rounded-2xl flex items-center justify-between flex-wrap gap-2 text-xs">
+              <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 p-2.5 rounded-2xl flex items-center justify-between flex-wrap gap-2 text-xs">
                 <div className="flex items-center space-x-2">
-                  <span className="font-bold text-rose-200">
+                  <span className="font-bold text-rose-900 dark:text-rose-200">
                     已勾选 {selectedWordIds.size} / {filteredWords.length} 个单词
                   </span>
                   <button
                     onClick={selectAllFiltered}
-                    className="text-xs text-rose-300 underline font-medium hover:text-rose-100"
+                    className="text-xs text-rose-700 dark:text-rose-300 underline font-medium hover:text-rose-900"
                   >
                     全选当前
                   </button>
                   <button
                     onClick={clearSelection}
-                    className="text-xs text-slate-400 underline font-medium hover:text-slate-200"
+                    className="text-xs text-slate-500 underline font-medium hover:text-slate-700"
                   >
                     取消选择
                   </button>
@@ -396,7 +396,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                   className={`px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1 transition-all ${
                     selectedWordIds.size > 0
                       ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
-                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -420,20 +420,20 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
               return (
                 <div
                   key={word.id}
-                  className={`bg-slate-900 rounded-2xl p-3 md:p-3.5 border transition-all flex items-start justify-between ${
+                  className={`bg-white dark:bg-slate-900 rounded-2xl p-3 md:p-3.5 border transition-all flex items-start justify-between ${
                     isSelected
-                      ? 'border-rose-500 ring-2 ring-rose-950/60 shadow-sm'
-                      : 'border-slate-800 hover:border-slate-700 shadow-xs'
+                      ? 'border-rose-400 ring-2 ring-rose-200 dark:ring-rose-950/60 shadow-sm'
+                      : 'border-slate-200/90 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 shadow-xs'
                   }`}
                 >
                   {/* Batch Select Checkbox */}
                   {batchMode && (
                     <button
                       onClick={() => toggleSelectWord(word.id)}
-                      className="mr-2.5 mt-0.5 text-slate-500 hover:text-rose-400 transition-colors"
+                      className="mr-2.5 mt-0.5 text-slate-400 hover:text-rose-600 transition-colors"
                     >
                       {isSelected ? (
-                        <CheckSquare className="w-5 h-5 text-rose-500 fill-rose-950/60" />
+                        <CheckSquare className="w-5 h-5 text-rose-600 fill-rose-100" />
                       ) : (
                         <Square className="w-5 h-5" />
                       )}
@@ -442,13 +442,13 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
 
                   <div className="space-y-1 flex-1 pr-2">
                     <div className="flex items-center space-x-2 flex-wrap">
-                      <span className="font-black text-slate-100 text-sm md:text-base font-serif">
+                      <span className="font-black text-slate-900 dark:text-slate-100 text-sm md:text-base font-serif">
                         {word.word}
                       </span>
-                      <span className="text-xs text-slate-400 font-mono">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                         {word.phonetic}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-bold border border-slate-700">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
                         {word.partOfSpeech}
                       </span>
 
@@ -464,12 +464,12 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                       </span>
                     </div>
 
-                    <div className="text-xs md:text-sm text-slate-200 font-medium">
+                    <div className="text-xs md:text-sm text-slate-800 dark:text-slate-200 font-medium">
                       {word.translation}
                     </div>
 
                     {word.example && (
-                      <div className="text-[11px] text-slate-400 line-clamp-1 italic">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 italic">
                         {word.example}
                       </div>
                     )}
@@ -481,7 +481,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                       {/* Speak button */}
                       <button
                         onClick={() => soundManager.speakWord(word.word)}
-                        className="p-1.5 text-emerald-400 hover:bg-emerald-950/60 rounded-full transition-colors"
+                        className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 rounded-full transition-colors"
                         title="朗读"
                       >
                         <Volume2 className="w-4 h-4" />
@@ -494,7 +494,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                           setEditingWord(learned);
                           setShowEditModal(true);
                         }}
-                        className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-sky-950/60 rounded-full transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/60 rounded-full transition-colors"
                         title="编辑单词"
                       >
                         <Pencil className="w-4 h-4" />
@@ -510,7 +510,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                             wordName: word.word,
                           });
                         }}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 rounded-full transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-full transition-colors"
                         title="删除该单词"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -522,8 +522,8 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                           onClick={() => handleToggleFurnace(word)}
                           className={`p-1.5 rounded-full transition-colors ${
                             isInFurnace
-                              ? 'text-rose-400 bg-rose-950/80 border border-rose-800/80'
-                              : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800'
+                              ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/80'
+                              : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800'
                           }`}
                           title={isInFurnace ? '已在生词回炉本' : '加入生词回炉本'}
                         >
@@ -540,7 +540,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                           className={`w-2 h-2 rounded-full transition-colors ${
                             streak >= s
                               ? 'bg-emerald-500'
-                              : 'bg-slate-800'
+                              : 'bg-slate-200 dark:bg-slate-700'
                           }`}
                         />
                       ))}
@@ -632,7 +632,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
               <div className="p-2 bg-rose-100 dark:bg-rose-950/80 rounded-xl">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="font-black text-base text-slate-850 dark:text-slate-100">
+              <h3 className="font-black text-base text-slate-900 dark:text-slate-100">
                 确认删除单词？
               </h3>
             </div>

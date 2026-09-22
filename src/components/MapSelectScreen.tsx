@@ -108,108 +108,85 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
 
   return (
     <div className="flex-1 flex flex-col p-3.5 md:p-6 overflow-y-auto space-y-4 pb-20">
-      {/* Top Banner - Single Unified Map Entrance */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white rounded-3xl p-4 md:p-5 shadow-md relative overflow-hidden">
-        <div className="relative z-10 space-y-1">
-          <div className="flex items-center space-x-2 text-xs font-bold text-emerald-100">
-            <Compass className="w-4 h-4 text-emerald-200" />
-            <span>卢恩·米德加尔特 冒险讨伐入口</span>
-          </div>
-          <h2 className="text-xl md:text-2xl font-black tracking-wide">
-            选择地图类型 · 开启出战
-          </h2>
-          <p className="text-xs text-emerald-50 opacity-90 max-w-xl leading-relaxed">
-            统一单词库智能分流出题。四种地图类型拥有不同的掌握度抽取算法，可自由修改每局出战词数。
-          </p>
-
-          {/* Quick Mastery Status in Word Pool */}
-          <div className="flex items-center gap-2 pt-1 flex-wrap text-[11px] font-bold">
-            <span className="bg-white/20 px-2.5 py-0.5 rounded-full text-white backdrop-blur-xs">
-              词库总计: {poolStats.total} 词
-            </span>
-            <span className="bg-emerald-500/80 px-2.5 py-0.5 rounded-full text-white">
-              已掌握: {poolStats.mastered} 词
-            </span>
-            <span className="bg-amber-500/80 px-2.5 py-0.5 rounded-full text-white">
-              熟悉: {poolStats.familiar} 词
-            </span>
-            <span className="bg-sky-500/80 px-2.5 py-0.5 rounded-full text-white">
-              全新: {poolStats.new} 词
-            </span>
-          </div>
-        </div>
-
-        {/* Decorative backdrop glow */}
-        <div className="absolute -right-8 -bottom-10 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-      </div>
-
       {/* Configuration Card: Words Per Battle (Requirement 6) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 sm:p-4 md:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2.5 sm:space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center space-x-2">
-            <div className="p-2 bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 rounded-xl">
+            <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 rounded-xl shrink-0">
               <Sliders className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-black text-sm md:text-base text-slate-800 dark:text-slate-100">
-                每局单词数量配置
-              </h3>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h3 className="font-black text-sm md:text-base text-slate-800 dark:text-slate-100">
+                  每局单词数量配置
+                </h3>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60">
+                  每次增减 10 词
+                </span>
+              </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                可自由设置单局讨伐考核的单词题量（建议 20~50 词）
+                可自由设置单局讨伐考核的单词题量（每次增加或减少 10 词，范围 10~100）
               </p>
             </div>
           </div>
 
-          {/* Stepper with - and + */}
-          <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+          {/* Stepper with - and + (Compact for Mobile) */}
+          <div className="flex items-center self-start sm:self-auto bg-slate-100 dark:bg-slate-800/90 p-0.5 sm:p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
             <button
               onClick={() => handleSetWordsPerBattle(currentWordsCount - 10)}
               disabled={currentWordsCount <= 10}
-              className={`p-1.5 rounded-xl transition-colors ${
+              className={`p-1 sm:p-1.5 rounded-lg transition-all ${
                 currentWordsCount <= 10
                   ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
-                  : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 shadow-xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 active:scale-95 shadow-xs'
               }`}
               title="减少 10 词"
+              aria-label="减少 10 词"
             >
-              <Minus className="w-4 h-4" />
+              <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
-            <span className="font-black text-sm md:text-base text-emerald-600 dark:text-emerald-400 px-3 font-mono min-w-[50px] text-center">
+            <span className="font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 px-2 sm:px-2.5 font-mono min-w-[44px] sm:min-w-[48px] text-center">
               {currentWordsCount} 词
             </span>
 
             <button
               onClick={() => handleSetWordsPerBattle(currentWordsCount + 10)}
               disabled={currentWordsCount >= 100}
-              className={`p-1.5 rounded-xl transition-colors ${
+              className={`p-1 sm:p-1.5 rounded-lg transition-all ${
                 currentWordsCount >= 100
                   ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
-                  : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 shadow-xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 active:scale-95 shadow-xs'
               }`}
               title="增加 10 词"
+              aria-label="增加 10 词"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
 
-        {/* Quick word count chip buttons: 20, 30, 40, 50 */}
-        <div className="flex items-center gap-2 flex-wrap pt-1">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold mr-1">快捷预设:</span>
-          {[20, 30, 40, 50].map((num) => (
+        {/* Quick word count chip buttons: 20, 40, 60 */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap pt-0.5">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold mr-0.5">
+            快捷预设:
+          </span>
+          {[20, 40, 60].map((num) => (
             <button
               key={num}
               onClick={() => handleSetWordsPerBattle(num)}
-              className={`px-3.5 py-1.5 text-xs font-black rounded-xl transition-all ${
+              className={`px-3 py-1 sm:px-3.5 sm:py-1.5 text-xs font-black rounded-xl transition-all ${
                 currentWordsCount === num
-                  ? 'bg-purple-600 text-white shadow-xs scale-105'
+                  ? 'bg-purple-600 text-white shadow-xs scale-105 ring-1 ring-purple-400/50'
                   : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
               }`}
             >
               {num} 词
             </button>
           ))}
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-auto hidden sm:inline">
+            💡 点击加减按钮每次增加或减少 10 词
+          </span>
         </div>
       </div>
 
@@ -245,7 +222,7 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
                       <span className="text-xs font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 shrink-0">
                         MAP 0{def.index}
                       </span>
-                      <h4 className="font-black text-base text-slate-850 dark:text-slate-100 flex items-baseline gap-1 whitespace-nowrap min-w-0">
+                      <h4 className="font-black text-base text-slate-900 dark:text-slate-100 flex items-baseline gap-1 whitespace-nowrap min-w-0">
                         <span>{parseMapName(def.name).zh}</span>
                         {parseMapName(def.name).en && (
                           <span className="text-xs font-normal text-slate-400 dark:text-slate-400 font-sans tracking-tight">
@@ -307,7 +284,7 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
           <div>
             <div className="flex items-center space-x-2 min-w-0 flex-nowrap">
               <span className="text-lg md:text-xl shrink-0">⚔️</span>
-              <h3 className="font-black text-sm sm:text-base md:text-lg text-slate-850 dark:text-slate-100 flex items-baseline gap-1.5 whitespace-nowrap overflow-hidden">
+              <h3 className="font-black text-sm sm:text-base md:text-lg text-slate-900 dark:text-slate-100 flex items-baseline gap-1.5 whitespace-nowrap overflow-hidden">
                 <span>出战准备 · {parseMapName(selectedDef.name).zh}</span>
                 {parseMapName(selectedDef.name).en && (
                   <span className="text-[11px] sm:text-xs font-normal text-slate-400 dark:text-slate-400 font-sans tracking-tight">
