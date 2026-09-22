@@ -187,7 +187,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 md:p-4">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden animate-scaleUp">
         {/* Modal Header */}
-        <div className="p-4 md:p-5 border-b border-slate-200/90 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-4 md:p-5 bg-slate-50/80 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="w-9 h-9 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5" />
@@ -211,8 +211,8 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
         </div>
 
         {/* Tab Switcher */}
-        <div className="px-4 md:px-5 pt-3">
-          <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl flex space-x-1">
+        <div className="px-4 md:px-5 pt-3 bg-white dark:bg-slate-900">
+          <div className="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl flex space-x-1 border border-slate-200/50 dark:border-slate-700/50">
             <button
               onClick={() => {
                 soundManager.playClick();
@@ -245,12 +245,12 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 bg-slate-50/30 dark:bg-slate-950/30">
           {activeTab === 'export' ? (
             /* =================== EXPORT TAB =================== */
             <div className="space-y-4">
               {/* Export Controls */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-850 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/80">
                 {/* Scope selector */}
                 <div>
                   <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1.5">
@@ -262,7 +262,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`py-1.5 px-2 text-xs font-bold rounded-xl transition-all ${
                         exportScope === 'all'
                           ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       全部词库 ({allGameWords.length})
@@ -272,7 +272,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`py-1.5 px-2 text-xs font-bold rounded-xl transition-all ${
                         exportScope === 'learned'
                           ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       已学词汇 ({learnedWordsList.length})
@@ -282,7 +282,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`py-1.5 px-2 text-xs font-bold rounded-xl transition-all ${
                         exportScope === 'furnace'
                           ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       生词本 ({furnaceWordsList.length})
@@ -301,7 +301,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`py-1.5 px-2 text-xs font-bold rounded-xl transition-all ${
                         exportFormat === 'standard'
                           ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       标准背词本 (.txt)
@@ -311,7 +311,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`py-1.5 px-2 text-xs font-bold rounded-xl transition-all ${
                         exportFormat === 'simple'
                           ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       简洁词对 (word 释义)
@@ -321,7 +321,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`py-1.5 px-2 text-xs font-bold rounded-xl transition-all ${
                         exportFormat === 'csv'
                           ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       CSV表格 (Excel/Anki)
@@ -331,7 +331,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`py-1.5 px-2 text-xs font-bold rounded-xl transition-all ${
                         exportFormat === 'json'
                           ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-750'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       JSON完整数据
@@ -349,7 +349,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                 <textarea
                   readOnly
                   value={exportedText}
-                  className="w-full h-48 md:h-56 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none resize-none leading-relaxed select-all"
+                  className="w-full h-48 md:h-56 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none resize-none leading-relaxed select-all"
                 />
               </div>
 
@@ -385,7 +385,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
             /* =================== IMPORT TAB =================== */
             <div className="space-y-4">
               {/* Target & Upload Options */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-850 p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/80">
                 <div className="flex items-center space-x-2">
                   <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">导入目的地:</span>
                   <div className="flex space-x-1">
@@ -394,7 +394,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
                         importTarget === 'learned'
                           ? 'bg-purple-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       已学词库
@@ -404,7 +404,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                       className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
                         importTarget === 'furnace'
                           ? 'bg-amber-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       生词回炉本
@@ -413,7 +413,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                 </div>
 
                 {/* Upload File button */}
-                <label className="cursor-pointer px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-purple-400 dark:hover:border-purple-500 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center space-x-1.5 transition-colors shadow-xs">
+                <label className="cursor-pointer px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-purple-400 dark:hover:border-purple-500 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center space-x-1.5 transition-colors shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700">
                   <Upload className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                   <span>上传文件 (.txt / .csv / .json)</span>
                   <input
@@ -431,27 +431,36 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                   <span>粘贴要导入的单词文本 (支持多种常见格式):</span>
                   <button
                     onClick={() => {
-                      const sample = `adventure [əd'ventʃə] n. 冒险；刺激经历 - Life is a great adventure.
-brave /breɪv/ adj. 勇敢的；无畏的 - The brave warrior fought the dragon.
-potion n. 药水；魔药 - She drank a healing potion.
-sword 剑；短剑
-shield: 盾牌；防护`;
+                      const sample = `1. ability [/əˈbɪləti/] (n.) 能力，才能，本领
+例句: Sue has the ability to succeed in business.
+译文: 苏有能力在商业上取得成功。
+
+2. adventure [/ədˈventʃə/] (n.) 冒险，奇遇
+例句: Life is a great adventure.
+译文: 生活是一场伟大的冒险。
+
+3. warrior [/ˈwɒriə/] (n.) 勇士，战士
+例句: The brave warrior fought the monster.
+译文: 勇敢的战士与魔物战斗。`;
                       handleParseImport(sample);
                     }}
                     className="text-purple-600 dark:text-purple-400 hover:underline text-[11px]"
                   >
-                    填入示例数据
+                    填入中考标准格式示例
                   </button>
                 </div>
                 <textarea
                   value={importText}
                   onChange={(e) => handleParseImport(e.target.value)}
-                  placeholder="在此直接粘贴单词文本，每行一个单词，支持例如：
-1. apple /'æpl/ n. 苹果 - An apple a day...
-2. banana 香蕉
-3. courage: 勇气
-4. CSV格式: sword,/'sɔːd/,n.,剑"
-                  className="w-full h-36 md:h-44 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 resize-none leading-relaxed"
+                  placeholder="在此直接粘贴单词文本，支持标准格式，如：
+1. ability [/əˈbɪləti/] (n.) 能力，才能，本领
+例句: Sue has the ability to succeed in business.
+译文: 苏有能力在商业上取得成功。
+
+序号. 单词 [音标] (词性.) 中文意思
+例句:
+译文:"
+                  className="w-full h-36 md:h-44 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 resize-none leading-relaxed"
                 />
               </div>
 
@@ -460,8 +469,8 @@ shield: 盾牌；防护`;
                 <div
                   className={`p-3 rounded-2xl border text-xs ${
                     importFeedback.success
-                      ? 'bg-purple-50/70 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900 text-purple-900 dark:text-purple-200'
-                      : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300'
+                      ? 'bg-purple-50/80 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800/80 text-purple-900 dark:text-purple-200'
+                      : 'bg-rose-50/80 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800/80 text-rose-700 dark:text-rose-300'
                   }`}
                 >
                   <div className="flex items-center justify-between font-bold">
@@ -477,7 +486,7 @@ shield: 盾牌；防护`;
 
                   {/* Parsed Preview Table */}
                   {importFeedback.parsedWords.length > 0 && (
-                    <div className="mt-2.5 max-h-32 overflow-y-auto rounded-xl border border-purple-200/80 dark:border-purple-900/60 bg-white/80 dark:bg-slate-900/80 p-2 space-y-1">
+                    <div className="mt-2.5 max-h-32 overflow-y-auto rounded-xl border border-purple-200/80 dark:border-purple-800/60 bg-white/90 dark:bg-slate-900/90 p-2 space-y-1">
                       {importFeedback.parsedWords.slice(0, 15).map((w, idx) => (
                         <div
                           key={idx}
@@ -516,7 +525,7 @@ shield: 盾牌；防护`;
                 className={`w-full py-2.5 rounded-xl font-black text-xs md:text-sm transition-all shadow-xs flex items-center justify-center space-x-1.5 ${
                   importFeedback && importFeedback.success && importFeedback.parsedWords.length > 0
                     ? 'bg-purple-600 hover:bg-purple-700 text-white cursor-pointer'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                 }`}
               >
                 <Check className="w-4 h-4" />
@@ -530,7 +539,7 @@ shield: 盾牌；防护`;
         </div>
 
         {/* Footer */}
-        <div className="p-3 bg-slate-50 dark:bg-slate-850 border-t border-slate-200/90 dark:border-slate-800 text-center">
+        <div className="p-3 bg-slate-50/80 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 text-center">
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
             💡 提示：所有导出的单词包含例句与词性，导入后的单词会自动适配战斗出题与卡普拉回炉系统。
           </p>

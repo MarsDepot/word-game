@@ -1,11 +1,35 @@
 import React, { useState, useMemo } from 'react';
-import { Sparkles, BookOpen, Volume2, Search, Check, Star, Download, Upload, Flame, FileText, Layers, RotateCw, Plus } from 'lucide-react';
+import {
+  Sparkles,
+  BookOpen,
+  Volume2,
+  Search,
+  Check,
+  Star,
+  FileText,
+  RotateCw,
+  Plus,
+  Pencil,
+  Trash2,
+  Flame,
+  CheckSquare,
+  Square,
+  AlertTriangle,
+} from 'lucide-react';
 import { PlayerProfile, CardItem, WordItem } from '../types/game';
-import { ALL_RO_CARDS, GAME_MAPS } from '../data/words';
+import { ALL_RO_CARDS } from '../data/words';
 import { getAllDefaultWords } from '../utils/wordHelpers';
 import { soundManager } from '../audio/soundManager';
 import { WordFlipReviewModal } from './WordFlipReviewModal';
 import { WordImportExportModal } from './WordImportExportModal';
+import { WordEditModal } from './WordEditModal';
+import {
+  getWordMastery,
+  getMasteryLabel,
+  getMasteryColor,
+  getMasteryStats,
+  MasteryState,
+} from '../utils/wordMastery';
 
 interface CardAlbumScreenProps {
   profile: PlayerProfile;
@@ -13,17 +37,31 @@ interface CardAlbumScreenProps {
 }
 
 export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpdateProfile }) => {
-  const [activeTab, setActiveTab] = useState<'cards' | 'words'>('words');
+  const [activeTab, setActiveTab] = useState<'words' | 'cards'>('words');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMapFilter, setSelectedMapFilter] = useState<string>('all');
+  const [masteryFilter, setMasteryFilter] = useState<'all' | MasteryState>('all');
   const [selectedCard, setSelectedCard] = useState<CardItem | null>(null);
+
+  // Batch deletion & selection
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedWordIds, setSelectedWordIds] = useState<Set<string>>(new Set());
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState<{
+    isOpen: boolean;
+    count: number;
+    wordIds: string[];
+    wordName?: string;
+  }>({ isOpen: false, count: 0, wordIds: [] });
+
+  // Word edit modal state
+  const [editingWord, setEditingWord] = useState<WordItem | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Modals
   const [showFlipReview, setShowFlipReview] = useState(false);
   const [showImportExport, setShowImportExport] = useState(false);
   const [importExportInitialTab, setImportExportInitialTab] = useState<'export' | 'import'>('export');
 
-  // All combined words (default game maps + learned custom words)
+  // Unified single word book (default game words + learned/custom user words)
   const allCombinedWords = useMemo(() => {
     const defaultWords = getAllDefaultWords();
     const map = new Map<string, WordItem>();
@@ -34,16 +72,21 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
     return Array.from(map.values());
   }, [profile.learnedWords]);
 
-  // Filtered words by query and map
+  // Overall statistics for mastery
+  const masteryStats = useMemo(() => {
+    return getMasteryStats(profile.learnedWords || {});
+  }, [profile.learnedWords]);
+
+  // Filtered words by query and mastery filter
   const filteredWords = useMemo(() => {
     return allCombinedWords.filter((w) => {
-      // Map category filter
-      if (selectedMapFilter !== 'all') {
-        const targetMap = GAME_MAPS.find((m) => m.id === selectedMapFilter);
-        if (targetMap && !targetMap.availableWords.some((mw) => mw.id === w.id)) {
-          return false;
-        }
+      // Mastery filter
+      const latestData = profile.learnedWords[w.id] || w;
+      const mState = getWordMastery(latestData);
+      if (masteryFilter !== 'all' && mState !== masteryFilter) {
+        return false;
       }
+
       // Search query filter
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase().trim();
@@ -53,7 +96,73 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
         (w.example && w.example.toLowerCase().includes(q))
       );
     });
-  }, [allCombinedWords, selectedMapFilter, searchQuery]);
+  }, [allCombinedWords, masteryFilter, searchQuery, profile.learnedWords]);
+
+  // Toggle batch selection of a word
+  const toggleSelectWord = (id: string) => {
+    setSelectedWordIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // Select all filtered words
+  const selectAllFiltered = () => {
+    setSelectedWordIds(new Set(filteredWords.map((w) => w.id)));
+  };
+
+  // Clear selection
+  const clearSelection = () => {
+    setSelectedWordIds(new Set());
+  };
+
+  // Perform deletion of specified word IDs
+  const executeDeleteWords = (ids: string[]) => {
+    if (!onUpdateProfile || ids.length === 0) return;
+    soundManager.playClick();
+
+    onUpdateProfile((prev) => {
+      const nextLearned = { ...prev.learnedWords };
+      ids.forEach((id) => {
+        delete nextLearned[id];
+      });
+
+      const nextFurnace = prev.furnaceWordIds.filter((id) => !ids.includes(id));
+
+      return {
+        ...prev,
+        furnaceWordIds: nextFurnace,
+        learnedWords: nextLearned,
+      };
+    });
+
+    setSelectedWordIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+
+    setConfirmDeleteModal({ isOpen: false, count: 0, wordIds: [] });
+  };
+
+  // Save edited or created word
+  const handleSaveWord = (savedWord: WordItem) => {
+    if (!onUpdateProfile) return;
+    onUpdateProfile((prev) => {
+      return {
+        ...prev,
+        learnedWords: {
+          ...prev.learnedWords,
+          [savedWord.id]: savedWord,
+        },
+      };
+    });
+  };
 
   // Toggle furnace status
   const handleToggleFurnace = (word: WordItem) => {
@@ -80,51 +189,46 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
     });
   };
 
-  // Set mastery stars
-  const handleSetMastery = (word: WordItem, stars: number) => {
-    if (!onUpdateProfile) return;
-    soundManager.playCorrect();
-    onUpdateProfile((prev) => {
-      const nextLearned = { ...prev.learnedWords };
-      if (!nextLearned[word.id]) {
-        nextLearned[word.id] = { ...word };
-      }
-      nextLearned[word.id].mastery = stars;
-
-      return {
-        ...prev,
-        learnedWords: nextLearned,
-      };
-    });
-  };
-
   return (
     <div className="flex-1 flex flex-col p-3 md:p-6 overflow-y-auto space-y-3.5 md:space-y-5 pb-20">
       {/* Top Banner & Quick Action Tools */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-3xl p-4 md:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-gradient-to-r from-slate-900 via-emerald-950/80 to-slate-900 rounded-3xl p-4 md:p-5 text-slate-100 shadow-xl border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <span className="text-2xl">📚</span>
-            <h2 className="text-lg md:text-xl font-black tracking-tight">
-              全图词汇宝典 & RO卡片图鉴
+            <h2 className="text-lg md:text-xl font-black tracking-tight text-white">
+              统一单词宝典 & RO卡片图鉴
             </h2>
           </div>
-          <p className="text-xs text-emerald-100 font-medium">
-            总收录 {allCombinedWords.length} 词 · 已掌握 {Object.keys(profile.learnedWords || {}).length} 词 · 收集 {profile.cards.length} 张魔物卡片
+          <p className="text-xs text-slate-300 font-medium">
+            全本统一收录 {allCombinedWords.length} 词 · 已掌握 {masteryStats.mastered} 词 · 熟悉 {masteryStats.familiar} 词 · 全新 {masteryStats.new} 词
           </p>
         </div>
 
-        {/* Action Buttons: Flip Review & Text Import/Export */}
-        <div className="flex items-center space-x-2 shrink-0">
+        {/* Action Buttons: Flip Review, Add Word & Text Import/Export */}
+        <div className="flex items-center space-x-2 shrink-0 flex-wrap gap-y-2">
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              setEditingWord(null);
+              setShowEditModal(true);
+            }}
+            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs md:text-sm rounded-2xl shadow-md transition-all flex items-center space-x-1"
+            title="添加单个新单词"
+          >
+            <Plus className="w-4 h-4" />
+            <span>新建单词</span>
+          </button>
+
           <button
             onClick={() => {
               soundManager.playClick();
               setShowFlipReview(true);
             }}
-            className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-xs md:text-sm rounded-2xl shadow-md transition-all flex items-center space-x-1.5 hover:scale-102"
+            className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs md:text-sm rounded-2xl shadow-md transition-all flex items-center space-x-1 hover:scale-102"
           >
             <RotateCw className="w-4 h-4" />
-            <span>📇 翻阅复习</span>
+            <span>翻阅复习</span>
           </button>
 
           <button
@@ -133,17 +237,17 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
               setImportExportInitialTab('export');
               setShowImportExport(true);
             }}
-            className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white font-black text-xs md:text-sm rounded-2xl backdrop-blur-xs transition-all flex items-center space-x-1.5"
+            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-black text-xs md:text-sm rounded-2xl transition-all flex items-center space-x-1"
             title="导入导出单词文本"
           >
             <FileText className="w-4 h-4" />
-            <span>文本导入/导出</span>
+            <span>导入/导出</span>
           </button>
         </div>
       </div>
 
       {/* Main Tab Switcher */}
-      <div className="bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex space-x-1.5 max-w-xl mx-auto w-full">
+      <div className="bg-slate-900 p-1.5 rounded-2xl border border-slate-800 shadow-md flex space-x-1.5 max-w-xl mx-auto w-full">
         <button
           onClick={() => {
             soundManager.playClick();
@@ -152,11 +256,11 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
           className={`flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
             activeTab === 'words'
               ? 'bg-emerald-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <BookOpen className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          <span>全图词汇宝典 ({allCombinedWords.length})</span>
+          <span>统一词库 ({allCombinedWords.length})</span>
         </button>
         <button
           onClick={() => {
@@ -166,7 +270,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
           className={`flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
             activeTab === 'cards'
               ? 'bg-purple-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -177,69 +281,195 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
       {activeTab === 'words' ? (
         /* =================== VOCABULARY CODEX TAB =================== */
         <div className="space-y-3.5">
-          {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row gap-2.5 max-w-2xl mx-auto w-full">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
-              <input
-                type="text"
-                placeholder="搜索英文单词、中文释义或例句..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl pl-10 pr-3 py-2.5 text-xs md:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 shadow-xs"
-              />
+          {/* Search & Mastery Filter Bar */}
+          <div className="flex flex-col gap-2.5 max-w-3xl mx-auto w-full">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="搜索英文单词、中文释义或例句..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-2xl pl-10 pr-3 py-2.5 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 shadow-xs"
+                />
+              </div>
+
+              {/* Batch Mode Toggle */}
+              <button
+                onClick={() => {
+                  soundManager.playClick();
+                  setBatchMode(!batchMode);
+                  if (batchMode) setSelectedWordIds(new Set());
+                }}
+                className={`px-3.5 py-2.5 rounded-2xl text-xs md:text-sm font-bold border transition-all flex items-center justify-center space-x-1.5 shrink-0 ${
+                  batchMode
+                    ? 'bg-rose-950/60 border-rose-800 text-rose-300'
+                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{batchMode ? '退出批量管理' : '批量管理'}</span>
+              </button>
             </div>
 
-            <select
-              value={selectedMapFilter}
-              onChange={(e) => setSelectedMapFilter(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2.5 text-xs md:text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500 shadow-xs"
-            >
-              <option value="all">全部章节地图 ({allCombinedWords.length}词)</option>
-              {GAME_MAPS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} ({m.availableWords.length}词)
-                </option>
-              ))}
-            </select>
+            {/* Mastery Degree Filter Buttons */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => setMasteryFilter('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  masteryFilter === 'all'
+                    ? 'bg-slate-700 text-white shadow-xs'
+                    : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-750'
+                }`}
+              >
+                全部 ({allCombinedWords.length})
+              </button>
+
+              <button
+                onClick={() => setMasteryFilter('mastered')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                  masteryFilter === 'mastered'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-800 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-950/40'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>已掌握 (全知全会 · {masteryStats.mastered})</span>
+              </button>
+
+              <button
+                onClick={() => setMasteryFilter('familiar')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                  masteryFilter === 'familiar'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-slate-800 text-amber-400 border border-amber-800/60 hover:bg-amber-950/40'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>熟悉 (仍需强化 · {masteryStats.familiar})</span>
+              </button>
+
+              <button
+                onClick={() => setMasteryFilter('new')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                  masteryFilter === 'new'
+                    ? 'bg-sky-600 text-white shadow-xs'
+                    : 'bg-slate-800 text-sky-400 border border-sky-800/60 hover:bg-sky-950/40'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-sky-500" />
+                <span>全新 (未曾出现 · {masteryStats.new})</span>
+              </button>
+            </div>
+
+            {/* Batch Operation Action Bar */}
+            {batchMode && (
+              <div className="bg-rose-950/40 border border-rose-900/60 p-2.5 rounded-2xl flex items-center justify-between flex-wrap gap-2 text-xs">
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold text-rose-200">
+                    已勾选 {selectedWordIds.size} / {filteredWords.length} 个单词
+                  </span>
+                  <button
+                    onClick={selectAllFiltered}
+                    className="text-xs text-rose-300 underline font-medium hover:text-rose-100"
+                  >
+                    全选当前
+                  </button>
+                  <button
+                    onClick={clearSelection}
+                    className="text-xs text-slate-400 underline font-medium hover:text-slate-200"
+                  >
+                    取消选择
+                  </button>
+                </div>
+
+                <button
+                  disabled={selectedWordIds.size === 0}
+                  onClick={() => {
+                    setConfirmDeleteModal({
+                      isOpen: true,
+                      count: selectedWordIds.size,
+                      wordIds: Array.from(selectedWordIds),
+                    });
+                  }}
+                  className={`px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1 transition-all ${
+                    selectedWordIds.size > 0
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
+                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>批量删除选中 ({selectedWordIds.size})</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Words Grid List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {filteredWords.map((word) => {
-              const learned = profile.learnedWords[word.id];
-              const mastery = learned?.mastery ?? word.mastery ?? 0;
+              const learned = profile.learnedWords[word.id] || word;
+              const mastery = getWordMastery(learned);
+              const mColor = getMasteryColor(mastery);
+              const mLabel = getMasteryLabel(mastery);
               const isInFurnace = profile.furnaceWordIds.includes(word.id);
+              const isSelected = selectedWordIds.has(word.id);
+              const streak = learned.consecutiveCorrect || 0;
 
               return (
                 <div
                   key={word.id}
-                  className="bg-white dark:bg-slate-900 rounded-2xl p-3 md:p-3.5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-start justify-between hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+                  className={`bg-slate-900 rounded-2xl p-3 md:p-3.5 border transition-all flex items-start justify-between ${
+                    isSelected
+                      ? 'border-rose-500 ring-2 ring-rose-950/60 shadow-sm'
+                      : 'border-slate-800 hover:border-slate-700 shadow-xs'
+                  }`}
                 >
+                  {/* Batch Select Checkbox */}
+                  {batchMode && (
+                    <button
+                      onClick={() => toggleSelectWord(word.id)}
+                      className="mr-2.5 mt-0.5 text-slate-500 hover:text-rose-400 transition-colors"
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-5 h-5 text-rose-500 fill-rose-950/60" />
+                      ) : (
+                        <Square className="w-5 h-5" />
+                      )}
+                    </button>
+                  )}
+
                   <div className="space-y-1 flex-1 pr-2">
                     <div className="flex items-center space-x-2 flex-wrap">
-                      <span className="font-black text-slate-850 dark:text-slate-100 text-sm md:text-base font-serif">
+                      <span className="font-black text-slate-100 text-sm md:text-base font-serif">
                         {word.word}
                       </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      <span className="text-xs text-slate-400 font-mono">
                         {word.phonetic}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-bold border border-slate-700">
                         {word.partOfSpeech}
                       </span>
-                      {word.category && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">
-                          {word.category}
-                        </span>
-                      )}
+
+                      {/* Mastery Badge */}
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold border flex items-center space-x-1 ${mColor.bg} ${mColor.text} ${mColor.border}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${mColor.dot}`} />
+                        <span>{mLabel}</span>
+                        {mastery !== 'new' && (
+                          <span className="opacity-80">({streak}/5连对)</span>
+                        )}
+                      </span>
                     </div>
 
-                    <div className="text-xs md:text-sm text-slate-800 dark:text-slate-200 font-medium">
+                    <div className="text-xs md:text-sm text-slate-200 font-medium">
                       {word.translation}
                     </div>
 
                     {word.example && (
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 italic">
+                      <div className="text-[11px] text-slate-400 line-clamp-1 italic">
                         {word.example}
                       </div>
                     )}
@@ -251,10 +481,39 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                       {/* Speak button */}
                       <button
                         onClick={() => soundManager.speakWord(word.word)}
-                        className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 rounded-full transition-colors"
+                        className="p-1.5 text-emerald-400 hover:bg-emerald-950/60 rounded-full transition-colors"
                         title="朗读"
                       >
                         <Volume2 className="w-4 h-4" />
+                      </button>
+
+                      {/* Edit Word */}
+                      <button
+                        onClick={() => {
+                          soundManager.playClick();
+                          setEditingWord(learned);
+                          setShowEditModal(true);
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-sky-950/60 rounded-full transition-colors"
+                        title="编辑单词"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      {/* Delete Word */}
+                      <button
+                        onClick={() => {
+                          setConfirmDeleteModal({
+                            isOpen: true,
+                            count: 1,
+                            wordIds: [word.id],
+                            wordName: word.word,
+                          });
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 rounded-full transition-colors"
+                        title="删除该单词"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
 
                       {/* Add/Remove Furnace */}
@@ -263,8 +522,8 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                           onClick={() => handleToggleFurnace(word)}
                           className={`p-1.5 rounded-full transition-colors ${
                             isInFurnace
-                              ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/80'
-                              : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800'
+                              ? 'text-rose-400 bg-rose-950/80 border border-rose-800/80'
+                              : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800'
                           }`}
                           title={isInFurnace ? '已在生词回炉本' : '加入生词回炉本'}
                         >
@@ -273,23 +532,17 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
                       )}
                     </div>
 
-                    {/* Mastery stars */}
-                    <div className="flex items-center space-x-0.5">
+                    {/* Consecutive Correct Progress Indicators */}
+                    <div className="flex items-center space-x-1" title={`当前连续答对: ${streak}次 (满5次转为已掌握)`}>
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <button
+                        <div
                           key={s}
-                          onClick={() => handleSetMastery(word, s)}
-                          className="hover:scale-125 transition-transform"
-                          title={`设为 ${s} 星掌握`}
-                        >
-                          <Star
-                            className={`w-3 h-3 ${
-                              mastery >= s
-                                ? 'fill-amber-400 text-amber-400'
-                                : 'text-slate-200 dark:text-slate-700'
-                            }`}
-                          />
-                        </button>
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            streak >= s
+                              ? 'bg-emerald-500'
+                              : 'bg-slate-800'
+                          }`}
+                        />
                       ))}
                     </div>
                   </div>
@@ -371,6 +624,57 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
         </div>
       )}
 
+      {/* Confirmation Modal for Deletion */}
+      {confirmDeleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 md:p-6 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center space-x-2.5 text-rose-600 dark:text-rose-400">
+              <div className="p-2 bg-rose-100 dark:bg-rose-950/80 rounded-xl">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="font-black text-base text-slate-850 dark:text-slate-100">
+                确认删除单词？
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {confirmDeleteModal.wordName ? (
+                <>
+                  确定要从词库中删除单词{' '}
+                  <span className="font-bold text-rose-600">
+                    "{confirmDeleteModal.wordName}"
+                  </span>{' '}
+                  吗？删除后该单词将不再参与各关卡出题。
+                </>
+              ) : (
+                <>
+                  确定要批量删除选中的{' '}
+                  <span className="font-bold text-rose-600">
+                    {confirmDeleteModal.count}
+                  </span>{' '}
+                  个单词条目吗？该操作不可撤销。
+                </>
+              )}
+            </p>
+
+            <div className="flex items-center justify-end space-x-2 pt-2">
+              <button
+                onClick={() => setConfirmDeleteModal({ isOpen: false, count: 0, wordIds: [] })}
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => executeDeleteWords(confirmDeleteModal.wordIds)}
+                className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs transition-colors"
+              >
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Card Detail Popup Modal */}
       {selectedCard && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -394,6 +698,14 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
           </div>
         </div>
       )}
+
+      {/* Word Edit & Creation Modal */}
+      <WordEditModal
+        word={editingWord}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleSaveWord}
+      />
 
       {/* Interactive Word Flip Flashcards Modal */}
       {showFlipReview && onUpdateProfile && (

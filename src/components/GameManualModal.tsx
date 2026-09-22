@@ -92,7 +92,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
             }`}
           >
             <BookMarked className="w-3.5 h-3.5" />
-            <span>考纲4单元</span>
+            <span>统一词库与掌握度</span>
           </button>
 
           <button
@@ -150,7 +150,7 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 text-xs md:text-sm leading-relaxed">
-          {/* TAB 1: 考纲四单元 */}
+          {/* TAB 1: 统一词库与掌握度 */}
           {activeTab === 'syllabus' && (
             <div className="space-y-4 animate-in fade-in-50 duration-150">
               <div className="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60">
@@ -158,105 +158,99 @@ export const GameManualModal: React.FC<GameManualModalProps> = ({ onClose }) => 
                   <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <h3 className="font-bold text-amber-900 dark:text-amber-200 text-sm">
-                      官方全体系权威收录 (2026年上海市中考规格)
+                      统一单词宝典 & 三维掌握度机制
                     </h3>
                     <p className="text-amber-700 dark:text-amber-300 text-xs mt-0.5">
-                      本游戏严格依据上海市教育考试院及新课标规范，将初中英语考纲分为 4 大权威单元与 1 个综合满分冲刺决战场：
+                      系统已完全去掉分章节限制，全考纲词汇合并为一本统一的大词库，支持自由编辑、批量删除与智能比例抽取：
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Unit 1 */}
-                <div className="p-3 rounded-xl border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      第一单元 · 考纲手册核心词
-                    </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 rounded-md">
-                      普隆德拉原野
-                    </span>
+              {/* Mastery Definition Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20">
+                  <div className="flex items-center space-x-1.5 font-bold text-emerald-800 dark:text-emerald-300 text-xs mb-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>已掌握 (全知全会)</span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    <strong>词源出处：</strong>《上海市初中毕业统一学业考试考试手册》考纲单词与词组。
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    重点包含初中核心生活品格、日常交际、情感态度与基础语法高频动词。
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    在战斗出题中<strong>连续 5 次出现都正确答对</strong>，化为深层长期记忆。
                   </p>
                 </div>
 
-                {/* Unit 2 */}
-                <div className="p-3 rounded-xl border border-sky-200/80 dark:border-sky-900/60 bg-sky-50/40 dark:bg-sky-950/20">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-sky-800 dark:text-sky-300 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-                      第二单元 · 课标三级拓展词
-                    </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 rounded-md">
-                      沉没之船海风港
-                    </span>
+                <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20">
+                  <div className="flex items-center space-x-1.5 font-bold text-amber-800 dark:text-amber-300 text-xs mb-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span>熟悉 (仍需强化)</span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    <strong>词源出处：</strong>教育部《义务教育英语课程标准》三级词汇（2022年版）。
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    涵盖自然风光、跨文化旅行、现代交通与地理环境核心认知词汇。
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    在战斗中<strong>出现过但曾做错</strong>，或连对尚未达到 5 次，需要持续巩固。
                   </p>
                 </div>
 
-                {/* Unit 3 */}
-                <div className="p-3 rounded-xl border border-green-200/80 dark:border-green-900/60 bg-green-50/40 dark:bg-green-950/20">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-green-800 dark:text-green-300 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      第三单元 · 学科教学基本要求
-                    </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-green-100 dark:bg-green-900/60 text-green-700 dark:text-green-300 rounded-md">
-                      哥布灵繁花密林
-                    </span>
+                <div className="p-3 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-950/20">
+                  <div className="flex items-center space-x-1.5 font-bold text-sky-800 dark:text-sky-300 text-xs mb-1">
+                    <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+                    <span>全新 (未曾出题)</span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    <strong>词源出处：</strong>《上海市初中英语学科教学基本要求（试验本）》。
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    侧重生特环保、社区生活、人际交往、社会服务与高阶动宾搭配。
-                  </p>
-                </div>
-
-                {/* Unit 4 */}
-                <div className="p-3 rounded-xl border border-purple-200/80 dark:border-purple-900/60 bg-purple-50/40 dark:bg-purple-950/20">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-purple-800 dark:text-purple-300 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                      第四单元 · 沪教版新教材词汇
-                    </span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 rounded-md">
-                      吉芬魔法地下城
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    <strong>词源出处：</strong>上海初中最新沪教版六、七年级新教材重点词汇。
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    涵盖科学技术探索、信息素养、人工智能与跨学科阅读高频词。
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    <strong>一次都未曾在战斗中出现过</strong>的陌生生词，等待勇敢者拓词开拓。
                   </p>
                 </div>
               </div>
 
-              {/* Final Battle */}
-              <div className="p-3.5 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
-                    👑 终极试炼 · 克雷斯特汉姆古城 (2026全四单元综合大决战)
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-200 dark:bg-rose-900/80 text-rose-800 dark:text-rose-200 rounded-md">
-                    Lv.25 开启
-                  </span>
+              {/* Map Types & Ratios */}
+              <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 space-y-2">
+                <h4 className="font-black text-xs md:text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <Compass className="w-4 h-4 text-emerald-500" />
+                  <span>四大出战地图类型与题库配比算法</span>
+                </h4>
+
+                <div className="space-y-2 text-xs">
+                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <strong className="text-emerald-600 dark:text-emerald-400">Map 1 索拉斯 (Solace)：</strong>
+                    <span className="text-slate-600 dark:text-slate-300 ml-1">
+                      10% 已掌握 + 20% 熟悉 + 70% 全新（首次使用或尚无历史记录时，自动 100% 全新出题）。
+                    </span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <strong className="text-sky-600 dark:text-sky-400">Map 2 奎灵那斯提 (Qualinesti)：</strong>
+                    <span className="text-slate-600 dark:text-slate-300 ml-1">
+                      100% 全新单词！专注攻坚生词池，快速建立初识词汇量。
+                    </span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <strong className="text-amber-600 dark:text-amber-400">Map 3 圣克仙城 (Sanction)：</strong>
+                    <span className="text-slate-600 dark:text-slate-300 ml-1">
+                      30% 已掌握 + 70% 熟悉！专为查漏补缺设计的错题回炉高压炼金场。
+                    </span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <strong className="text-purple-600 dark:text-purple-400">Map 4 巨龙列岛 (Dragon Isles)：</strong>
+                    <span className="text-slate-600 dark:text-slate-300 ml-1">
+                      随机比例全池抽选！模拟真实考场全真随机模考。
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300">
-                  融汇第一至第四单元全部高难度辨析词与逻辑推理词汇，中考满分冲刺必修！
+              </div>
+
+              {/* Per Round Setting & Import Format */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5">
+                <div className="font-bold text-slate-700 dark:text-slate-200">
+                  ⚙️ 自定义题量与标准导入格式：
+                </div>
+                <p className="text-slate-600 dark:text-slate-400">
+                  1. <strong>题量自由配置</strong>：进入地图前可任意增减每局单词量（快捷预设 20/30/40/50 词等）。
+                </p>
+                <p className="text-slate-600 dark:text-slate-400">
+                  2. <strong>单词本编辑与批量删除</strong>：可在“统一词库”中勾选批量删除、单条编辑或新建单词。
+                </p>
+                <p className="text-slate-600 dark:text-slate-400">
+                  3. <strong>标准多行格式导入</strong>：支持“序号. 单词 [音标] (词性.) 中文意思 \n 例句: \n 译文:”完整格式无缝导入导出。
                 </p>
               </div>
             </div>

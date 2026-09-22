@@ -63,11 +63,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#dde7ee] dark:bg-slate-950 flex items-center justify-center p-0 md:p-4 lg:p-6 text-slate-800 dark:text-slate-100 font-sans transition-colors">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-0 md:p-4 lg:p-6 text-slate-100 font-sans transition-colors">
       {/* Responsive Container: Fluid and spacious on PC/Tablet, phone-framed or wide */}
       <main
         id="app-mobile-frame"
-        className="w-full md:max-w-3xl lg:max-w-4xl h-screen md:h-[90vh] md:max-h-[920px] bg-[#f8fafc] dark:bg-slate-900 md:rounded-[32px] shadow-2xl flex flex-col overflow-hidden relative border-0 md:border-4 md:border-slate-300 dark:md:border-slate-800 transition-colors"
+        className="w-full md:max-w-3xl lg:max-w-4xl h-screen md:h-[90vh] md:max-h-[920px] bg-slate-900 md:rounded-[32px] shadow-2xl flex flex-col overflow-hidden relative border-0 md:border-4 md:border-slate-800 transition-colors"
       >
         {/* Top Audio & BGM Status Bar */}
         <AudioControlBar
@@ -92,6 +92,7 @@ export default function App() {
               {currentTab === 'map' && (
                 <MapSelectScreen
                   profile={profile}
+                  onUpdateProfile={setProfile}
                   onSelectMap={handleStartMapBattle}
                 />
               )}

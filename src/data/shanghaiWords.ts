@@ -2025,3 +2025,16 @@ export const SH_MIDDLE_SCHOOL_MAP2_WORDS = SH_UNIT2_WORDS;
 export const SH_MIDDLE_SCHOOL_MAP3_WORDS = SH_UNIT3_WORDS;
 export const SH_MIDDLE_SCHOOL_MAP4_WORDS = SH_UNIT4_WORDS;
 export const SH_MIDDLE_SCHOOL_MAP5_WORDS = SH_UNIT5_COMPREHENSIVE_WORDS;
+
+// 统一合成全本单词库（去掉分章节，合成一本）
+export const ALL_UNIFIED_WORDS: WordItem[] = [
+  ...SH_UNIT1_WORDS,
+  ...SH_UNIT2_WORDS,
+  ...SH_UNIT3_WORDS,
+  ...SH_UNIT4_WORDS,
+].map((w) => ({
+  ...w,
+  category: '中考核心词汇库',
+  consecutiveCorrect: w.consecutiveCorrect ?? 0,
+  appearedCount: w.appearedCount ?? 0,
+}));

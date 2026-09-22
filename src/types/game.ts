@@ -71,6 +71,8 @@ export interface RoguelitePerk {
   };
 }
 
+export type WordMastery = 'new' | 'familiar' | 'mastered';
+
 export interface WordItem {
   id: string;
   word: string;
@@ -81,9 +83,11 @@ export interface WordItem {
   example: string;
   exampleTranslation: string;
   category: string;
-  mastery: number; // 0: New, 1: Learning, 2: Familiar, 3: Mastered, 4: Expert, 5: Godlike
-  wrongCount: number;
-  correctCount: number;
+  mastery?: number; // 0: New, 1: Learning, 2: Familiar, 3: Mastered, 4: Expert, 5: Godlike
+  wrongCount?: number;
+  correctCount?: number;
+  consecutiveCorrect?: number; // 连续答对次数 (达到5次即为已掌握)
+  appearedCount?: number; // 出现总次数 (0次即为全新)
   inFurnace: boolean; // Needs review in Kafra Furnace
 }
 
@@ -145,6 +149,8 @@ export interface PlayerProfile {
   furnaceWordIds: string[]; // Words needing review in furnace
   unlockedMapIds: string[];
   defeatedBosses: string[];
+  wordsPerBattle?: number; // 每局单词数量 (默认 10)
+  selectedMapType?: string; // 选中的地图类型 (solace | qualinesti | sanction | dragon_isles)
 }
 
 export interface UserAccount {

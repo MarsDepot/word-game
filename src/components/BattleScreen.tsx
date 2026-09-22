@@ -5,6 +5,7 @@ import { GameMap, Monster, WordItem, PlayerProfile, DamagePopup, RoguelitePerk, 
 import { ROGUELITE_PERKS, ALL_RO_CARDS } from '../data/words';
 import { MonsterAvatar } from './MonsterAvatar';
 import { soundManager } from '../audio/soundManager';
+import { getWordMastery, getMasteryLabel, getMasteryColor, recordWordAnswer } from '../utils/wordMastery';
 
 interface BattleScreenProps {
   map: GameMap;
@@ -38,6 +39,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const [hasShield, setHasShield] = useState<boolean>(true);
 
   // Question & Word state
+  const [wordPoolIndex, setWordPoolIndex] = useState<number>(0);
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [correctAnswerText, setCorrectAnswerText] = useState<string>('');
@@ -123,7 +125,10 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   // Load next word
   const loadNextWord = () => {
     const words = map.availableWords;
-    const randWord = words[Math.floor(Math.random() * words.length)] || words[0];
+    if (!words || words.length === 0) return;
+    const baseWord = words[wordPoolIndex % words.length];
+    setWordPoolIndex((prev) => prev + 1);
+    const randWord = profile.learnedWords[baseWord.id] || baseWord;
     setCurrentWord(randWord);
     setSelectedOption(null);
     setIsAnswered(false);
@@ -257,15 +262,16 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     if (currentWord) {
       onUpdateProfile((prev) => {
         const existing = prev.learnedWords[currentWord.id] || { ...currentWord };
+        const updated = recordWordAnswer(existing, true);
+        const furnaceIds = updated.inFurnace
+          ? (prev.furnaceWordIds.includes(currentWord.id) ? prev.furnaceWordIds : [...prev.furnaceWordIds, currentWord.id])
+          : prev.furnaceWordIds.filter((id) => id !== currentWord.id);
         return {
           ...prev,
+          furnaceWordIds: furnaceIds,
           learnedWords: {
             ...prev.learnedWords,
-            [currentWord.id]: {
-              ...existing,
-              mastery: Math.min(5, (existing.mastery || 0) + 1),
-              correctCount: (existing.correctCount || 0) + 1,
-            },
+            [currentWord.id]: updated,
           },
         };
       });
@@ -296,20 +302,17 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     // Word marked for review in Kafra Furnace
     if (currentWord) {
       onUpdateProfile((prev) => {
+        const existing = prev.learnedWords[currentWord.id] || { ...currentWord };
+        const updated = recordWordAnswer(existing, false);
         const furnaceIds = prev.furnaceWordIds.includes(currentWord.id)
           ? prev.furnaceWordIds
           : [...prev.furnaceWordIds, currentWord.id];
-        const existing = prev.learnedWords[currentWord.id] || { ...currentWord };
         return {
           ...prev,
           furnaceWordIds: furnaceIds,
           learnedWords: {
             ...prev.learnedWords,
-            [currentWord.id]: {
-              ...existing,
-              wrongCount: (existing.wrongCount || 0) + 1,
-              inFurnace: true,
-            },
+            [currentWord.id]: updated,
           },
         };
       });
@@ -610,18 +613,48 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       {/* Roguelite Combat Question Card */}
       {currentWord && (
         <div className="bg-white dark:bg-slate-900 rounded-t-3xl shadow-xl p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 flex flex-col space-y-3 md:space-y-4">
-          {/* Question Timer Bar */}
-          <div className="w-full h-1.5 md:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-100 ${
-                timeLeft / maxQuestionTime > 0.5
-                  ? 'bg-emerald-500'
-                  : timeLeft / maxQuestionTime > 0.25
-                  ? 'bg-amber-500'
-                  : 'bg-rose-500'
-              }`}
-              style={{ width: `${Math.max(0, (timeLeft / maxQuestionTime) * 100)}%` }}
-            />
+          {/* Question Timer Bar & Word Metadata */}
+          <div className="flex flex-col space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="text-slate-700 dark:text-slate-300 font-bold">
+                  第 {((wordPoolIndex - 1 + map.availableWords.length) % (map.availableWords.length || 1)) + 1} / {map.availableWords.length} 词
+                </span>
+                {(() => {
+                  const currentWordData = profile.learnedWords[currentWord.id] || currentWord;
+                  const mState = getWordMastery(currentWordData);
+                  const mColor = getMasteryColor(mState);
+                  const mLabel = getMasteryLabel(mState);
+                  const streak = currentWordData.consecutiveCorrect || 0;
+                  return (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${mColor.bg} ${mColor.text} ${mColor.border}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${mColor.dot}`} />
+                      <span>{mLabel}</span>
+                      {mState !== 'new' && (
+                        <span className="opacity-80">({streak}/5连对)</span>
+                      )}
+                    </span>
+                  );
+                })()}
+              </span>
+
+              <span className="font-mono text-xs">
+                {Math.ceil(timeLeft)}s
+              </span>
+            </div>
+
+            <div className="w-full h-1.5 md:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-100 ${
+                  timeLeft / maxQuestionTime > 0.5
+                    ? 'bg-emerald-500'
+                    : timeLeft / maxQuestionTime > 0.25
+                    ? 'bg-amber-500'
+                    : 'bg-rose-500'
+                }`}
+                style={{ width: `${Math.max(0, (timeLeft / maxQuestionTime) * 100)}%` }}
+              />
+            </div>
           </div>
 
           {/* Word Header with Audio Pronunciation & Hint */}

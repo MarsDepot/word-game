@@ -238,7 +238,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 md:p-4">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden animate-scaleUp">
         {/* Header */}
-        <div className="p-3.5 md:p-4 border-b border-slate-200/90 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-3.5 md:p-4 bg-slate-50/80 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
               <BookOpen className="w-4 h-4" />
@@ -267,14 +267,14 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
         </div>
 
         {/* Filter Bar */}
-        <div className="p-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="p-3 bg-slate-100/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
           {/* Scope selection */}
           <div className="flex items-center space-x-1.5 flex-wrap">
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">范围:</span>
             <select
               value={scopeFilter}
               onChange={(e) => setScopeFilter(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-amber-500 shadow-2xs"
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-amber-500 shadow-2xs"
             >
               <option value="all">📚 全部词库 ({allGameWords.length}词)</option>
               <option value="learned">
@@ -294,7 +294,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
             <select
               value={masteryFilter}
               onChange={(e) => setMasteryFilter(e.target.value as 'all' | 'unlearned' | 'mastered')}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-amber-500 shadow-2xs"
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-amber-500 shadow-2xs"
             >
               <option value="all">全部熟练度</option>
               <option value="unlearned">生疏需练 (0-2星)</option>
@@ -309,7 +309,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
               className={`px-2 py-1 rounded-xl font-bold text-xs flex items-center space-x-1 transition-all ${
                 isShuffle
                   ? 'bg-purple-600 text-white shadow-2xs'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
               }`}
               title="乱序随机翻阅"
             >
@@ -322,7 +322,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
               className={`px-2 py-1 rounded-xl font-bold text-xs flex items-center space-x-1 transition-all ${
                 autoPronounce
                   ? 'bg-emerald-600 text-white shadow-2xs'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
               }`}
               title="切换单词时自动朗读"
             >
@@ -334,7 +334,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
             <select
               value={autoSlideshowSpeed}
               onChange={(e) => setAutoSlideshowSpeed(Number(e.target.value))}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-1.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none shadow-2xs"
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-1.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none shadow-2xs"
               title="自动轮播翻页"
             >
               <option value={0}>⏱️ 轮播: 关</option>
@@ -346,7 +346,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
         </div>
 
         {/* Card Body & Interactive Flip Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col justify-center items-center select-none">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col justify-center items-center select-none bg-slate-50/50 dark:bg-slate-950/40">
           {filteredWords.length === 0 ? (
             <div className="text-center py-12 space-y-3">
               <div className="text-4xl">📭</div>
@@ -371,14 +371,14 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                   第 <strong className="text-slate-800 dark:text-slate-100">{currentIndex + 1}</strong> / {filteredWords.length} 词
                 </span>
                 <div className="flex items-center space-x-1.5">
-                  <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black">
+                  <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black border border-slate-200/60 dark:border-slate-700">
                     {activeWord.category || '基础词汇'}
                   </span>
                 </div>
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-amber-400 to-rose-400 transition-all duration-300"
                   style={{ width: `${((currentIndex + 1) / filteredWords.length) * 100}%` }}
@@ -388,7 +388,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
               {/* Interactive Flip Card */}
               <div
                 onClick={handleFlip}
-                className="w-full min-h-[260px] md:min-h-[300px] bg-white dark:bg-slate-850 rounded-3xl p-6 shadow-xl border-2 border-slate-200 dark:border-slate-750 hover:border-amber-400 dark:hover:border-amber-500 transition-all duration-300 cursor-pointer flex flex-col justify-between relative group hover:scale-[1.01]"
+                className="w-full min-h-[260px] md:min-h-[300px] bg-white dark:bg-slate-800/95 rounded-3xl p-6 shadow-xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-400 dark:hover:border-amber-500 transition-all duration-300 cursor-pointer flex flex-col justify-between relative group hover:scale-[1.01]"
               >
                 {!isFlipped ? (
                   /* ================= CARD FRONT (English & Phonetics) ================= */
@@ -403,7 +403,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                           e.stopPropagation();
                           soundManager.speakWord(activeWord.word);
                         }}
-                        className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-full transition-colors"
+                        className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-700/80 rounded-full transition-colors"
                         title="朗读发音 (V键)"
                       >
                         <Volume2 className="w-5 h-5" />
@@ -411,7 +411,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                     </div>
 
                     <div className="py-6 space-y-2">
-                      <h2 className="text-3xl md:text-4xl font-black text-slate-850 dark:text-slate-100 font-serif tracking-tight">
+                      <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-slate-100 font-serif tracking-tight">
                         {activeWord.word}
                       </h2>
                       <div className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-mono">
@@ -419,7 +419,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-center space-x-1">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 text-[11px] text-slate-400 dark:text-slate-400 flex items-center justify-center space-x-1">
                       <RotateCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
                       <span>点击卡片或按空格键翻转查看释义与例句</span>
                     </div>
@@ -427,9 +427,9 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                 ) : (
                   /* ================= CARD BACK (Meaning, Example, Actions) ================= */
                   <div className="flex-1 flex flex-col justify-between text-left animate-fadeIn">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700/60">
                       <div className="flex items-center space-x-2">
-                        <span className="font-black text-slate-800 dark:text-slate-100 font-serif text-lg">
+                        <span className="font-black text-slate-850 dark:text-slate-100 font-serif text-lg">
                           {activeWord.word}
                         </span>
                         <span className="text-xs text-slate-400 font-mono">
@@ -442,7 +442,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                           e.stopPropagation();
                           soundManager.speakWord(activeWord.word);
                         }}
-                        className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-full transition-colors"
+                        className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-700/80 rounded-full transition-colors"
                       >
                         <Volume2 className="w-4 h-4" />
                       </button>
@@ -458,7 +458,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                       </div>
 
                       {activeWord.example && (
-                        <div className="bg-slate-50 dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+                        <div className="bg-slate-50 dark:bg-slate-900/90 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-1">
                           <p className="text-xs text-slate-700 dark:text-slate-200 font-medium italic">
                             "{activeWord.example}"
                           </p>
@@ -472,7 +472,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                     </div>
 
                     {/* Interactive Action Bar on Card Back */}
-                    <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div className="pt-2.5 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
                       {/* Mastery Rating */}
                       <div className="flex items-center space-x-1">
                         <span className="text-[10px] text-slate-400 font-bold mr-0.5">掌握:</span>
@@ -500,7 +500,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
                         className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center space-x-1 transition-colors ${
                           isInFurnace
                             ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-300'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-rose-600'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600'
                         }`}
                         title={isInFurnace ? '移出生词回炉本' : '加入生词回炉本以强化复习'}
                       >
@@ -516,7 +516,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
               <div className="flex items-center space-x-3">
                 <button
                   onClick={handlePrev}
-                  className="flex-1 py-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-black text-xs md:text-sm rounded-2xl shadow-xs transition-colors flex items-center justify-center space-x-1.5"
+                  className="flex-1 py-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-black text-xs md:text-sm rounded-2xl shadow-xs transition-colors flex items-center justify-center space-x-1.5"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>上一词 (←)</span>
@@ -544,7 +544,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
         </div>
 
         {/* Footer shortcuts helper */}
-        <div className="p-3 bg-slate-50 dark:bg-slate-850 border-t border-slate-200/90 dark:border-slate-800 text-center">
+        <div className="p-3 bg-slate-50/80 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 text-center">
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
             ⌨️ 快捷键：<strong>← / →</strong> 切换前后单词，<strong>空格键 / ↑ / ↓</strong> 翻转卡片，<strong>V 键</strong> 朗读发音
           </p>

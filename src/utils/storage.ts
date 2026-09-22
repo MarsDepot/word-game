@@ -3,6 +3,7 @@
  */
 import { PlayerProfile, WordItem, UserAccount } from '../types/game';
 import { INITIAL_EQUIPMENT, ALL_RO_CARDS, GAME_MAPS } from '../data/words';
+import { ALL_UNIFIED_WORDS } from '../data/shanghaiWords';
 
 const USERS_LIST_KEY = 'word_ragnarok_users_v2';
 const ACTIVE_USER_ID_KEY = 'word_ragnarok_active_uid_v2';
@@ -11,10 +12,17 @@ const LEGACY_STORAGE_KEY = 'word_ragnarok_save_v1';
 export const AVATAR_OPTIONS = ['⚔️', '🏹', '🧙‍♂️', '🛡️', '🐱', '🐰', '🌸', '⚡', '🎒', '👑'];
 
 export function getInitialProfile(name: string = '初心冒险者', avatar: string = '⚔️'): PlayerProfile {
-  // Populate initial words from map 1
+  // Populate all words into ONE unified wordbook
   const initialLearnedWords: Record<string, WordItem> = {};
-  GAME_MAPS[0].availableWords.forEach((w) => {
-    initialLearnedWords[w.id] = { ...w };
+  ALL_UNIFIED_WORDS.forEach((w) => {
+    initialLearnedWords[w.id] = {
+      ...w,
+      consecutiveCorrect: 0,
+      appearedCount: 0,
+      correctCount: 0,
+      wrongCount: 0,
+      mastery: 0,
+    };
   });
 
   return {
@@ -75,6 +83,8 @@ export function getInitialProfile(name: string = '初心冒险者', avatar: stri
     furnaceWordIds: [],
     unlockedMapIds: ['map_prontera'],
     defeatedBosses: [],
+    wordsPerBattle: 20,
+    selectedMapType: 'solace',
   };
 }
 
@@ -143,11 +153,47 @@ export function getAllUsers(): UserAccount[] {
 export function getCurrentUser(): UserAccount {
   const users = getAllUsers();
   const activeUid = localStorage.getItem(ACTIVE_USER_ID_KEY);
+  let user = users[0];
   if (activeUid) {
     const found = users.find((u) => u.id === activeUid);
-    if (found) return found;
+    if (found) user = found;
   }
-  return users[0];
+
+  // Ensure unified words and new settings are present
+  let modified = false;
+  if (!user.profile.wordsPerBattle) {
+    user.profile.wordsPerBattle = 10;
+    modified = true;
+  }
+  if (!user.profile.selectedMapType) {
+    user.profile.selectedMapType = 'solace';
+    modified = true;
+  }
+  if (!user.profile.learnedWords) {
+    user.profile.learnedWords = {};
+    modified = true;
+  }
+
+  // Backfill missing words from ALL_UNIFIED_WORDS
+  ALL_UNIFIED_WORDS.forEach((w) => {
+    if (!user.profile.learnedWords[w.id]) {
+      user.profile.learnedWords[w.id] = {
+        ...w,
+        consecutiveCorrect: 0,
+        appearedCount: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        mastery: 0,
+      };
+      modified = true;
+    }
+  });
+
+  if (modified) {
+    saveCurrentUserProfile(user.profile);
+  }
+
+  return user;
 }
 
 /**

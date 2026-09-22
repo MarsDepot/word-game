@@ -3,12 +3,13 @@
  */
 import { WordItem } from '../types/game';
 import { GAME_MAPS } from '../data/words';
+import { ALL_UNIFIED_WORDS } from '../data/shanghaiWords';
 
 export type ExportFormat = 'standard' | 'simple' | 'csv' | 'json';
 
 // Get fallback pool of all default words across all maps
 export function getAllDefaultWords(): WordItem[] {
-  return GAME_MAPS.flatMap((m) => m.availableWords);
+  return ALL_UNIFIED_WORDS;
 }
 
 /**
@@ -50,27 +51,42 @@ export function exportWordsToText(words: WordItem[], format: ExportFormat): stri
 
     case 'standard':
     default: {
-      // Human-readable standard notebook format
-      return words
-        .map((w, index) => {
-          const lines = [
-            `${index + 1}. ${w.word} ${w.phonetic ? `[${w.phonetic}]` : ''} ${w.partOfSpeech ? `(${w.partOfSpeech})` : ''} ${w.translation}`,
-          ];
-          if (w.example) {
-            lines.push(`   例句: ${w.example}`);
-          }
-          if (w.exampleTranslation) {
-            lines.push(`   译文: ${w.exampleTranslation}`);
-          }
-          return lines.join('\n');
-        })
-        .join('\n\n');
+      // Human-readable standard notebook format matching requirement 4:
+      // 序号. 单词 [音标] (词性.) 中文意思
+      // 例句: ...
+      // 译文: ...
+      const entries = words.map((w, index) => {
+        let phoneticFormatted = w.phonetic ? w.phonetic.trim() : '';
+        if (phoneticFormatted && !phoneticFormatted.startsWith('/') && !phoneticFormatted.startsWith('[')) {
+          phoneticFormatted = `[/${phoneticFormatted}/]`;
+        } else if (phoneticFormatted && !phoneticFormatted.startsWith('[')) {
+          phoneticFormatted = `[${phoneticFormatted}]`;
+        }
+        const posFormatted = w.partOfSpeech ? `(${w.partOfSpeech.replace(/^\(|\)$/g, '')})` : '';
+
+        const lines = [
+          `${index + 1}. ${w.word} ${phoneticFormatted ? `${phoneticFormatted} ` : ''}${posFormatted ? `${posFormatted} ` : ''}${w.translation}`,
+        ];
+        if (w.example) {
+          lines.push(`例句: ${w.example}`);
+        }
+        if (w.exampleTranslation) {
+          lines.push(`译文: ${w.exampleTranslation}`);
+        }
+        return lines.join('\n');
+      });
+
+      return `/*****************************************\n${entries.join('\n\n')}\n*****************************************/`;
     }
   }
 }
 
 /**
  * Parse plain text string into WordItem[]
+ * Robustly supports requirement 4's format:
+ * 序号. 单词 [音标] (词性.) 中文意思
+ * 例句: ...
+ * 译文: ...
  */
 export function parseWordsFromText(
   inputText: string,
@@ -107,10 +123,12 @@ export function parseWordsFromText(
             partOfSpeech: item.partOfSpeech || 'n.',
             example: item.example || `This is an example of ${word}.`,
             exampleTranslation: item.exampleTranslation || `这是 ${word} 的例句。`,
-            category: item.category || '导入词汇',
+            category: item.category || '自定义导入',
             mastery: typeof item.mastery === 'number' ? item.mastery : 0,
             wrongCount: item.wrongCount || 0,
             correctCount: item.correctCount || 0,
+            consecutiveCorrect: item.consecutiveCorrect || 0,
+            appearedCount: item.appearedCount || 0,
             inFurnace: !!item.inFurnace,
           };
         });
@@ -118,136 +136,203 @@ export function parseWordsFromText(
         return { success: true, words: validWords, errors: [] };
       }
     } catch {
-      // fallback to line-by-line parser
+      // fallback to multi-line parser
     }
   }
 
-  // 2. Line by line parsing for CSV, Tab-separated, or Space/Hyphen separated
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith('#') && !l.startsWith('//'));
-
+  // 2. Multi-line state machine parser
+  const lines = text.split(/\r?\n/);
   const parsedWords: WordItem[] = [];
   const errors: string[] = [];
 
-  // Check if first line is CSV header
-  let startIndex = 0;
-  if (lines[0].toLowerCase().includes('单词') || lines[0].toLowerCase().includes('word') || lines[0].toLowerCase().includes('translation')) {
-    startIndex = 1;
+  interface PendingWord {
+    word: string;
+    phonetic: string;
+    partOfSpeech: string;
+    translation: string;
+    example: string;
+    exampleTranslation: string;
+    rawLine: string;
+    lineNum: number;
   }
 
-  for (let i = startIndex; i < lines.length; i++) {
-    const rawLine = lines[i];
+  let currentPending: PendingWord | null = null;
+
+  const commitPending = () => {
+    if (!currentPending) return;
+    const { word, phonetic, partOfSpeech, translation, example, exampleTranslation, rawLine, lineNum } = currentPending;
+    currentPending = null;
+
+    if (!word || !translation) {
+      errors.push(`第 ${lineNum} 行未能识别有效英文单词或中文释义: "${rawLine}"`);
+      return;
+    }
+
+    const cleanWord = word.replace(/^["']|["']$/g, '').trim();
+    const cleanTrans = translation.replace(/^["']|["']$/g, '').trim();
+    if (!cleanWord || !cleanTrans) return;
+
+    const id = `custom_${cleanWord.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${parsedWords.length}_${Date.now()}`;
+    const options = generateOptionsForTranslation(cleanTrans, fallbackTranslations);
+
+    parsedWords.push({
+      id,
+      word: cleanWord,
+      phonetic: phonetic || `/${cleanWord.toLowerCase()}/`,
+      translation: cleanTrans,
+      options,
+      partOfSpeech: partOfSpeech || 'n.',
+      example: example || `This is an example of ${cleanWord}.`,
+      exampleTranslation: exampleTranslation || `这是 ${cleanWord} 的例句。`,
+      category: '自定义导入',
+      mastery: 0,
+      wrongCount: 0,
+      correctCount: 0,
+      consecutiveCorrect: 0,
+      appearedCount: 0,
+      inFurnace: false,
+    });
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i].trim();
+    const lineNum = i + 1;
+
+    // Skip empty lines or comment borders
+    if (!raw) continue;
+    if (raw.startsWith('/*') || raw.startsWith('*/') || raw.startsWith('***') || raw.startsWith('---') || raw.startsWith('===') || raw.startsWith('//') || raw.startsWith('#')) {
+      continue;
+    }
+
+    // Skip template placeholder header lines like "序号. 单词 [音标] (词性.) 中文意思"
+    if (raw.includes('序号') && raw.includes('单词') && raw.includes('中文意思')) {
+      continue;
+    }
+    if ((raw === '例句:' || raw === '例句：' || raw === '译文:' || raw === '译文：') && !currentPending) {
+      continue;
+    }
+
+    // Check if it's an example line: "例句: ..." or "例句：..." or "Example: ..."
+    const exampleMatch = raw.match(/^(?:例句|Example|例)[:：]\s*(.*)$/i);
+    if (exampleMatch) {
+      if (currentPending) {
+        currentPending.example = exampleMatch[1].trim();
+      }
+      continue;
+    }
+
+    // Check if it's a translation line: "译文: ..." or "译文：..." or "翻译: ..." or "Translation: ..."
+    const transMatch = raw.match(/^(?:译文|翻译|Translation|译)[:：]\s*(.*)$/i);
+    if (transMatch) {
+      if (currentPending) {
+        currentPending.exampleTranslation = transMatch[1].trim();
+      }
+      continue;
+    }
+
+    // Check if it's CSV header
+    if (i === 0 && (raw.includes('单词') || raw.includes('word')) && (raw.includes('释义') || raw.includes('translation'))) {
+      continue;
+    }
+
+    // New word definition line encountered! Commit previous word first
+    commitPending();
+
     // Remove leading numbering like "1. ", "12) ", "1、"
-    const line = rawLine.replace(/^\d+[\.\、\)\s]+/, '').trim();
-    if (!line) continue;
+    let line = raw.replace(/^\d+[\.\、\)\s]+/, '').trim();
 
-    let word = '';
-    let phonetic = '';
-    let pos = 'n.';
-    let translation = '';
-    let example = '';
-    let exampleTranslation = '';
-
-    // Strategy A: Check CSV format (quoted or comma separated)
+    // Check CSV line
     if (line.includes(',') || line.includes('\t')) {
       const separator = line.includes('\t') ? '\t' : ',';
       const parts = splitCsvLine(line, separator);
-
       if (parts.length >= 2) {
-        word = parts[0].trim();
-        if (parts.length >= 4) {
-          phonetic = parts[1].trim();
-          pos = parts[2].trim() || 'n.';
-          translation = parts[3].trim();
-          example = parts[4]?.trim() || '';
-          exampleTranslation = parts[5]?.trim() || '';
-        } else if (parts.length === 3) {
-          // Could be word, phonetic/pos, translation OR word, translation, example
-          if (parts[1].startsWith('/') || parts[1].startsWith('[') || parts[1].includes('.')) {
-            phonetic = parts[1].trim();
-            translation = parts[2].trim();
-          } else {
-            translation = parts[1].trim();
-            example = parts[2].trim();
-          }
-        } else {
-          translation = parts[1].trim();
-        }
+        currentPending = {
+          word: parts[0].trim(),
+          phonetic: parts.length >= 4 ? parts[1].trim() : '',
+          partOfSpeech: parts.length >= 4 ? parts[2].trim() : 'n.',
+          translation: parts.length >= 4 ? parts[3].trim() : parts[1].trim(),
+          example: parts.length >= 5 ? parts[4].trim() : '',
+          exampleTranslation: parts.length >= 6 ? parts[5].trim() : '',
+          rawLine: raw,
+          lineNum,
+        };
+        continue;
       }
     }
 
-    // Strategy B: Regex extraction for standard formats
-    if (!word || !translation) {
-      // Regex 1: word [/phonetic/] (pos.) translation
-      // Example: apple /'æpl/ n. 苹果  or  banana [bə'nɑ:nə] n. 香蕉
-      const regex1 = /^([a-zA-Z\-\s']+?)\s+(?:[\/\[]([^\/\]]+)[\/\]]\s+)?(?:([a-z]+\.?)\s+)?(.+)$/;
-      const match1 = line.match(regex1);
+    // Standard format Regex:
+    // "ability [/əˈbɪləti/] (n.) 能力，才能，本领"
+    // "ability [əˈbɪləti] (n.) 能力，才能，本领"
+    // "ability (n.) 能力，才能，本领"
+    // "ability [/əˈbɪləti/] 能力，才能，本领"
+    // "ability 能力，才能，本领"
+    const standardRegex = /^([a-zA-Z\-\s']+?)\s+(?:\[(?:\/)?([^\/\]]+)(?:\/)?\]\s+)?(?:\(([a-zA-Z\.\/\s]+)\)\s+)?(.+)$/;
+    const stdMatch = line.match(standardRegex);
 
-      if (match1) {
-        word = match1[1].trim();
-        phonetic = match1[2] ? `/${match1[2].trim()}/` : '';
-        pos = match1[3] ? match1[3].trim() : 'n.';
-        translation = match1[4].trim();
+    if (stdMatch) {
+      const word = stdMatch[1].trim();
+      const phonetic = stdMatch[2] ? `[/${stdMatch[2].trim()}/]` : '';
+      const partOfSpeech = stdMatch[3] ? stdMatch[3].trim() : 'n.';
+      let translation = stdMatch[4].trim();
+      let example = '';
 
-        // Check if translation contains example separated by dash or semicolon
-        if (translation.includes(' - ') || translation.includes(' —— ') || translation.includes(' 例:')) {
-          const transParts = translation.split(/(?:\s+-\s+|\s+——\s+|\s+例:)/);
-          translation = transParts[0].trim();
-          example = transParts[1]?.trim() || '';
-        }
-      } else {
-        // Strategy C: Split by first space, colon, or hyphen
-        // Example: "apple 苹果" or "apple: 苹果" or "apple - 苹果"
-        const separatorMatch = line.match(/^([a-zA-Z\-\s']+?)\s*[:：\-—=]\s*(.+)$/);
-        if (separatorMatch) {
-          word = separatorMatch[1].trim();
-          translation = separatorMatch[2].trim();
-        } else {
-          // Space separated fallback: first word is english, rest is translation
-          const spaceParts = line.split(/\s+/);
-          if (spaceParts.length >= 2) {
-            word = spaceParts[0].trim();
-            translation = spaceParts.slice(1).join(' ').trim();
-          }
-        }
-      }
-    }
-
-    // Clean extracted values
-    word = word.replace(/^["']|["']$/g, '').trim();
-    translation = translation.replace(/^["']|["']$/g, '').trim();
-
-    // Validate English word
-    if (word && translation) {
-      if (!phonetic) {
-        phonetic = `/${word.toLowerCase()}/`;
-      }
-      if (!example) {
-        example = `I love ${word}.`;
-        exampleTranslation = `我喜欢${translation.split(/[，,；;]/)[0]}。`;
+      // Check if translation contains inline example separated by dash
+      if (translation.includes(' - ') || translation.includes(' —— ')) {
+        const parts = translation.split(/(?:\s+-\s+|\s+——\s+)/);
+        translation = parts[0].trim();
+        example = parts[1]?.trim() || '';
       }
 
-      const id = `custom_${word.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${i}_${Date.now()}`;
-      const options = generateOptionsForTranslation(translation, fallbackTranslations);
-
-      parsedWords.push({
-        id,
+      currentPending = {
         word,
         phonetic,
+        partOfSpeech,
         translation,
-        options,
-        partOfSpeech: pos || 'n.',
         example,
-        exampleTranslation,
-        category: '自定义导入',
-        mastery: 0,
-        wrongCount: 0,
-        correctCount: 0,
-        inFurnace: false,
-      });
-    } else {
-      errors.push(`第 ${i + 1} 行解析失败: "${rawLine}"`);
+        exampleTranslation: '',
+        rawLine: raw,
+        lineNum,
+      };
+      continue;
     }
+
+    // Fallback: Split by colon, hyphen, or space
+    const sepMatch = line.match(/^([a-zA-Z\-\s']+?)\s*[:：\-—=]\s*(.+)$/);
+    if (sepMatch) {
+      currentPending = {
+        word: sepMatch[1].trim(),
+        phonetic: '',
+        partOfSpeech: 'n.',
+        translation: sepMatch[2].trim(),
+        example: '',
+        exampleTranslation: '',
+        rawLine: raw,
+        lineNum,
+      };
+      continue;
+    }
+
+    // Space separated fallback: first word is english, rest is translation
+    const spaceParts = line.split(/\s+/);
+    if (spaceParts.length >= 2) {
+      currentPending = {
+        word: spaceParts[0].trim(),
+        phonetic: '',
+        partOfSpeech: 'n.',
+        translation: spaceParts.slice(1).join(' ').trim(),
+        example: '',
+        exampleTranslation: '',
+        rawLine: raw,
+        lineNum,
+      };
+      continue;
+    }
+
+    errors.push(`第 ${lineNum} 行未能识别: "${raw}"`);
   }
+
+  // Commit last item
+  commitPending();
 
   if (parsedWords.length === 0) {
     return {
