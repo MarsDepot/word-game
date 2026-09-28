@@ -9,6 +9,8 @@ import {
   downloadTextFile,
   copyTextToClipboard,
   getAllDefaultWords,
+  getUnifiedWordBook,
+  syncVocabularyToSourceFile,
 } from '../utils/wordHelpers';
 import { soundManager } from '../audio/soundManager';
 
@@ -31,10 +33,12 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
   const [exportScope, setExportScope] = useState<'all' | 'learned' | 'furnace'>('all');
   const [exportFormat, setExportFormat] = useState<ExportFormat>('standard');
   const [copiedSuccess, setCopiedSuccess] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+  const [isSyncingFile, setIsSyncingFile] = useState(false);
 
   // --- Import State ---
   const [importText, setImportText] = useState('');
-  const [importTarget, setImportTarget] = useState<'learned' | 'furnace'>('learned');
+  const [importTarget, setImportTarget] = useState<'learned' | 'furnace' | 'replace_initial'>('replace_initial');
   const [importFeedback, setImportFeedback] = useState<{
     success: boolean;
     message: string;
@@ -44,22 +48,12 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
 
   // Gather all unique words
   const allGameWords = useMemo(() => {
-    const deletedSet = new Set(profile.deletedWordIds || []);
-    const defaultWords = getAllDefaultWords().filter((w) => !deletedSet.has(w.id));
-    const learnedMap = profile.learnedWords || {};
-    const map = new Map<string, WordItem>();
-
-    defaultWords.forEach((w) => map.set(w.id, w));
-    Object.values(learnedMap).forEach((w) => {
-      if (!deletedSet.has(w.id)) map.set(w.id, w);
-    });
-
-    return Array.from(map.values());
+    return getUnifiedWordBook(profile);
   }, [profile.learnedWords, profile.deletedWordIds]);
 
   const learnedWordsList = useMemo(() => {
-    return Object.values(profile.learnedWords || {});
-  }, [profile.learnedWords]);
+    return getUnifiedWordBook(profile);
+  }, [profile.learnedWords, profile.deletedWordIds]);
 
   const furnaceWordsList = useMemo(() => {
     return (profile.furnaceWordIds || [])
@@ -151,12 +145,57 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
     e.target.value = ''; // reset file input
   };
 
+  // Sync current active vocabulary into src/data/shanghaiWords.ts
+  const handleSyncCurrentAsInitial = async () => {
+    if (allGameWords.length === 0 || isSyncingFile) return;
+    soundManager.playClick();
+    setIsSyncingFile(true);
+    setSyncStatusMsg('正在将当前词库写入初始词库文件 (src/data/shanghaiWords.ts)...');
+    const res = await syncVocabularyToSourceFile(allGameWords, true);
+    setIsSyncingFile(false);
+    if (res.ok) {
+      soundManager.playLevelUp();
+      setSyncStatusMsg(
+        `✅ 已成功将当前 ${res.count || allGameWords.length} 个单词替换为原始初始词库！现在可直接同步到 GitHub。`
+      );
+    } else {
+      setSyncStatusMsg(`⚠️ 写入初始词库失败: ${res.error || '未知错误'}`);
+    }
+  };
+
   // Confirm import into player profile
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (!importFeedback || !importFeedback.success || importFeedback.parsedWords.length === 0) return;
 
     soundManager.playLevelUp();
     const newWords = importFeedback.parsedWords;
+
+    if (importTarget === 'replace_initial') {
+      setIsSyncingFile(true);
+      setSyncStatusMsg('正在替换为原始初始词库并写入源码文件...');
+      const res = await syncVocabularyToSourceFile(newWords, true);
+      setIsSyncingFile(false);
+      const finalWords = res.words && res.words.length > 0 ? res.words : newWords;
+
+      onUpdateProfile((prev) => {
+        const nextLearned: Record<string, WordItem> = {};
+        finalWords.forEach((w) => {
+          nextLearned[w.id] = { ...w };
+        });
+        return {
+          ...prev,
+          learnedWords: nextLearned,
+          deletedWordIds: [],
+          furnaceWordIds: [],
+        };
+      });
+
+      setSyncStatusMsg(
+        `🎉 已成功用 ${finalWords.length} 个单词替换原始词库并设为初始词库！现在可直接同步到 GitHub。`
+      );
+      setTimeout(() => onClose(), 1200);
+      return;
+    }
 
     onUpdateProfile((prev) => {
       const nextLearned = { ...prev.learnedWords };
@@ -182,7 +221,6 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
       };
     });
 
-    alert(`🎉 成功导入 ${newWords.length} 个单词到${importTarget === 'furnace' ? '生词回炉本' : '已学词库'}！`);
     onClose();
   };
 
@@ -356,8 +394,17 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                 />
               </div>
 
+              {syncStatusMsg && (
+                <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-200 text-xs font-bold flex items-center justify-between gap-2">
+                  <span>{syncStatusMsg}</span>
+                  <button onClick={() => setSyncStatusMsg(null)} className="text-emerald-500 hover:text-emerald-700">
+                    ✕
+                  </button>
+                </div>
+              )}
+
               {/* Action Buttons */}
-              <div className="flex items-center space-x-2.5">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                 <button
                   onClick={handleCopyExport}
                   className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs md:text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1.5"
@@ -382,16 +429,44 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                   <Download className="w-4 h-4" />
                   <span>下载文本文件 (.{exportFormat === 'json' ? 'json' : exportFormat === 'csv' ? 'csv' : 'txt'})</span>
                 </button>
+
+                <button
+                  onClick={handleSyncCurrentAsInitial}
+                  disabled={isSyncingFile || allGameWords.length === 0}
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs md:text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-60"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{isSyncingFile ? '写入源码中...' : `设为初始词库 (${allGameWords.length}词)`}</span>
+                </button>
               </div>
             </div>
           ) : (
             /* =================== IMPORT TAB =================== */
             <div className="space-y-4">
+              {syncStatusMsg && (
+                <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-200 text-xs font-bold flex items-center justify-between gap-2">
+                  <span>{syncStatusMsg}</span>
+                  <button onClick={() => setSyncStatusMsg(null)} className="text-emerald-500 hover:text-emerald-700">
+                    ✕
+                  </button>
+                </div>
+              )}
+
               {/* Target & Upload Options */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/80">
-                <div className="flex items-center space-x-2">
-                  <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">导入目的地:</span>
-                  <div className="flex space-x-1">
+                <div className="flex items-center space-x-2 flex-wrap gap-y-1.5">
+                  <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">导入方式:</span>
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      onClick={() => setImportTarget('replace_initial')}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                        importTarget === 'replace_initial'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      替换原始词库 (设为初始词库)
+                    </button>
                     <button
                       onClick={() => setImportTarget('learned')}
                       className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
@@ -400,7 +475,7 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
                           : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
-                      已学词库
+                      追加到词库
                     </button>
                     <button
                       onClick={() => setImportTarget('furnace')}
@@ -523,18 +598,23 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
 
               {/* Confirm Import Button */}
               <button
-                disabled={!importFeedback || !importFeedback.success || importFeedback.parsedWords.length === 0}
+                disabled={!importFeedback || !importFeedback.success || importFeedback.parsedWords.length === 0 || isSyncingFile}
                 onClick={handleConfirmImport}
                 className={`w-full py-2.5 rounded-xl font-black text-xs md:text-sm transition-all shadow-xs flex items-center justify-center space-x-1.5 ${
-                  importFeedback && importFeedback.success && importFeedback.parsedWords.length > 0
+                  importFeedback && importFeedback.success && importFeedback.parsedWords.length > 0 && !isSyncingFile
                     ? 'bg-purple-600 hover:bg-purple-700 text-white cursor-pointer'
                     : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                 }`}
               >
                 <Check className="w-4 h-4" />
                 <span>
-                  确认导入 {importFeedback?.parsedWords.length || 0} 个单词到
-                  {importTarget === 'furnace' ? '生词回炉本' : '已学词库'}
+                  {isSyncingFile
+                    ? '正在写入项目源码词库...'
+                    : importTarget === 'replace_initial'
+                    ? `确认用这 ${importFeedback?.parsedWords.length || 0} 个单词替换原始词库并设为初始词库`
+                    : `确认导入 ${importFeedback?.parsedWords.length || 0} 个单词到${
+                        importTarget === 'furnace' ? '生词回炉本' : '已学词库'
+                      }`}
                 </span>
               </button>
             </div>

@@ -18,7 +18,11 @@ import {
 } from 'lucide-react';
 import { PlayerProfile, CardItem, WordItem } from '../types/game';
 import { ALL_RO_CARDS } from '../data/words';
-import { getAllDefaultWords } from '../utils/wordHelpers';
+import {
+  getAllDefaultWords,
+  getUnifiedWordBook,
+  syncVocabularyToSourceFile,
+} from '../utils/wordHelpers';
 import { soundManager } from '../audio/soundManager';
 import { WordFlipReviewModal } from './WordFlipReviewModal';
 import { WordImportExportModal } from './WordImportExportModal';
@@ -60,27 +64,35 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
   const [showFlipReview, setShowFlipReview] = useState(false);
   const [showImportExport, setShowImportExport] = useState(false);
   const [importExportInitialTab, setImportExportInitialTab] = useState<'export' | 'import'>('export');
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [isSyncingSource, setIsSyncingSource] = useState(false);
 
   // Unified single word book (default game words + learned/custom user words)
   const allCombinedWords = useMemo(() => {
-    const deletedSet = new Set(profile.deletedWordIds || []);
-    const defaultWords = getAllDefaultWords().filter((w) => !deletedSet.has(w.id));
-    const map = new Map<string, WordItem>();
-
-    defaultWords.forEach((w) => map.set(w.id, w));
-    Object.values(profile.learnedWords || {}).forEach((w) => {
-      if (!deletedSet.has(w.id)) {
-        map.set(w.id, { ...w });
-      }
-    });
-
-    return Array.from(map.values());
+    return getUnifiedWordBook(profile);
   }, [profile.learnedWords, profile.deletedWordIds]);
+
+  // Write current vocabulary to src/data/shanghaiWords.ts as initial default vocabulary for GitHub sync
+  const handleSyncToInitialSource = async () => {
+    if (allCombinedWords.length === 0 || isSyncingSource) return;
+    soundManager.playClick();
+    setIsSyncingSource(true);
+    setSyncNotice('正在将当前词库写入初始词库文件 (src/data/shanghaiWords.ts)...');
+    const res = await syncVocabularyToSourceFile(allCombinedWords, true);
+    setIsSyncingSource(false);
+    if (res.ok) {
+      soundManager.playLevelUp();
+      setSyncNotice(`✅ 已将当前 ${res.count || allCombinedWords.length} 个单词替换为原始初始词库！现在可直接同步到 GitHub。`);
+      setTimeout(() => setSyncNotice(null), 6000);
+    } else {
+      setSyncNotice(`⚠️ 同步初始词库失败: ${res.error || '未知错误'}`);
+    }
+  };
 
   // Overall statistics for mastery
   const masteryStats = useMemo(() => {
-    return getMasteryStats(profile.learnedWords || {});
-  }, [profile.learnedWords]);
+    return getMasteryStats(allCombinedWords);
+  }, [allCombinedWords]);
 
   // Filtered words by query and mastery filter
   const filteredWords = useMemo(() => {
@@ -250,8 +262,30 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
             <FileText className="w-4 h-4" />
             <span>导入/导出</span>
           </button>
+
+          <button
+            onClick={handleSyncToInitialSource}
+            disabled={isSyncingSource || allCombinedWords.length === 0}
+            className="px-3 py-2 bg-indigo-500/90 hover:bg-indigo-400 text-white font-black text-xs md:text-sm rounded-2xl shadow-sm transition-all flex items-center space-x-1 disabled:opacity-60"
+            title="将当前词库替换写入项目初始词库文件 (src/data/shanghaiWords.ts)，以便同步到 GitHub"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>{isSyncingSource ? '写入中...' : '设为初始词库'}</span>
+          </button>
         </div>
       </div>
+
+      {syncNotice && (
+        <div className="p-3 rounded-2xl bg-emerald-950/80 border border-emerald-700/70 text-emerald-200 text-xs md:text-sm font-bold flex items-center justify-between gap-2 animate-fadeIn">
+          <span>{syncNotice}</span>
+          <button
+            onClick={() => setSyncNotice(null)}
+            className="text-emerald-400 hover:text-white px-2 py-0.5 rounded-lg"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main Tab Switcher */}
       <div className="bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex space-x-1.5 max-w-xl mx-auto w-full">

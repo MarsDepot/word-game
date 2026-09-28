@@ -183,22 +183,58 @@ function hydrateUserProfile(user: UserAccount): boolean {
     modified = true;
   }
 
-  // Backfill missing words from ALL_UNIFIED_WORDS (skipping deleted ones)
+  // If the user has imported a full custom word library (e.g., 1785 words) alongside the old 201 default words,
+  // remove the old 201 default words so only the user's current library remains as the initial baseline.
+  const learnedEntries = Object.values(user.profile.learnedWords);
+  const customEntries = learnedEntries.filter(
+    (w) => w && (w.id.startsWith('custom_') || w.id.startsWith('word_'))
+  );
+  const legacyEntries = learnedEntries.filter((w) => w && w.id.startsWith('w_'));
+  if (customEntries.length >= 1000 && legacyEntries.length > 0 && legacyEntries.length <= 210) {
+    legacyEntries.forEach((lw) => {
+      delete user.profile.learnedWords[lw.id];
+    });
+    user.profile.furnaceWordIds = user.profile.furnaceWordIds.filter(
+      (id) => !id.startsWith('w_')
+    );
+    modified = true;
+  }
+
+  // Backfill missing words from ALL_UNIFIED_WORDS (skipping deleted ones and words already present by composite key)
   const deletedSet = new Set(user.profile.deletedWordIds);
-  ALL_UNIFIED_WORDS.forEach((w) => {
-    if (deletedSet.has(w.id)) return;
-    if (!user.profile.learnedWords[w.id]) {
-      user.profile.learnedWords[w.id] = {
-        ...w,
-        consecutiveCorrect: 0,
-        appearedCount: 0,
-        correctCount: 0,
-        wrongCount: 0,
-        mastery: 0,
-      };
-      modified = true;
-    }
-  });
+  const makeCompositeKey = (w: Partial<WordItem>) =>
+    `${String(w.word || '').toLowerCase().trim()}__${String(w.partOfSpeech || '').trim()}__${String(
+      w.translation || ''
+    ).trim()}`;
+
+  const existingCompositeKeys = new Set(
+    Object.values(user.profile.learnedWords)
+      .filter(Boolean)
+      .map((w) => makeCompositeKey(w))
+  );
+
+  // Only backfill from ALL_UNIFIED_WORDS if the user hasn't replaced the 201-word default pack with a larger custom pack
+  const skipLegacyDefaultBackfill =
+    ALL_UNIFIED_WORDS.length <= 210 && Object.keys(user.profile.learnedWords).length >= 1000;
+
+  if (!skipLegacyDefaultBackfill) {
+    ALL_UNIFIED_WORDS.forEach((w) => {
+      if (deletedSet.has(w.id)) return;
+      const compKey = makeCompositeKey(w);
+      if (!user.profile.learnedWords[w.id] && !existingCompositeKeys.has(compKey)) {
+        user.profile.learnedWords[w.id] = {
+          ...w,
+          consecutiveCorrect: 0,
+          appearedCount: 0,
+          correctCount: 0,
+          wrongCount: 0,
+          mastery: 0,
+        };
+        existingCompositeKeys.add(compKey);
+        modified = true;
+      }
+    });
+  }
 
   return modified;
 }

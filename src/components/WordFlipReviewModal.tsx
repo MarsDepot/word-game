@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { WordItem, PlayerProfile } from '../types/game';
 import { GAME_MAPS } from '../data/words';
-import { getAllDefaultWords } from '../utils/wordHelpers';
+import { getAllDefaultWords, getUnifiedWordBook } from '../utils/wordHelpers';
 import { soundManager } from '../audio/soundManager';
 
 interface WordFlipReviewModalProps {
@@ -36,17 +36,7 @@ export const WordFlipReviewModal: React.FC<WordFlipReviewModalProps> = ({
 }) => {
   // Pool of all game words + learned custom words
   const allGameWords = useMemo(() => {
-    const deletedSet = new Set(profile.deletedWordIds || []);
-    const defaultWords = getAllDefaultWords().filter((w) => !deletedSet.has(w.id));
-    const learnedMap = profile.learnedWords || {};
-    const map = new Map<string, WordItem>();
-
-    defaultWords.forEach((w) => map.set(w.id, w));
-    Object.values(learnedMap).forEach((w) => {
-      if (!deletedSet.has(w.id)) map.set(w.id, { ...w });
-    });
-
-    return Array.from(map.values());
+    return getUnifiedWordBook(profile);
   }, [profile.learnedWords, profile.deletedWordIds]);
 
   // Filters

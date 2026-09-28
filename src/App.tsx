@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Compass, Shield, Flame, BookOpen, Sparkles, Smartphone } from 'lucide-react';
-import { PlayerProfile, GameMap, UserAccount } from './types/game';
-import { getCurrentUser, saveCurrentUserProfile } from './utils/storage';
+import { PlayerProfile, GameMap, UserAccount, WordItem } from './types/game';
+import { getCurrentUser, getAllUsers, saveCurrentUserProfile } from './utils/storage';
 import { GAME_MAPS } from './data/words';
+import { ALL_UNIFIED_WORDS } from './data/shanghaiWords';
+import {
+  extractTargetVocabularyFromProfile,
+  syncVocabularyToSourceFile,
+} from './utils/wordHelpers';
 import { AudioControlBar } from './components/AudioControlBar';
 import { MapSelectScreen } from './components/MapSelectScreen';
 import { BattleScreen } from './components/BattleScreen';
@@ -22,11 +27,60 @@ export default function App() {
   const [activeBattleMap, setActiveBattleMap] = useState<GameMap | null>(null);
   const [showUserModal, setShowUserModal] = useState<boolean>(false);
   const [showManualModal, setShowManualModal] = useState<boolean>(false);
+  const lastSyncedCountRef = useRef<number>(ALL_UNIFIED_WORDS.length);
 
   // Auto-save on profile change
   useEffect(() => {
     saveCurrentUserProfile(profile);
   }, [profile]);
+
+  // Automatically sync user's current vocabulary (e.g., 1785 words) into src/data/shanghaiWords.ts
+  // so it becomes the initial built-in vocabulary for GitHub sync and fresh clones.
+  useEffect(() => {
+    const currentExtracted = extractTargetVocabularyFromProfile(profile);
+
+    // If current profile had 1785 custom words + 201 legacy words, strip legacy 201 words from profile
+    if (currentExtracted.shouldReplaceLegacyInProfile) {
+      setProfile((prev) => {
+        const nextLearned: Record<string, WordItem> = {};
+        currentExtracted.words.forEach((w) => {
+          nextLearned[w.id] = w;
+        });
+        return {
+          ...prev,
+          learnedWords: nextLearned,
+          furnaceWordIds: prev.furnaceWordIds.filter((id) => !!nextLearned[id]),
+        };
+      });
+    }
+
+    let bestWords = currentExtracted.words;
+
+    // Also inspect all local user profiles in case another profile holds the full 1785 words
+    if (bestWords.length < 1785) {
+      const allUsers = getAllUsers();
+      for (const u of allUsers) {
+        if (u.profile) {
+          const ext = extractTargetVocabularyFromProfile(u.profile);
+          if (ext.words.length === 1785 || ext.words.length > bestWords.length) {
+            bestWords = ext.words;
+            if (ext.words.length === 1785) break;
+          }
+        }
+      }
+    }
+
+    if (
+      bestWords.length > 0 &&
+      bestWords.length !== lastSyncedCountRef.current &&
+      (bestWords.length === 1785 || bestWords.length > 201 || lastSyncedCountRef.current === 201)
+    ) {
+      lastSyncedCountRef.current = bestWords.length;
+      syncVocabularyToSourceFile(bestWords, true).catch((err) => {
+        console.error('Failed to auto-sync vocabulary to source file:', err);
+      });
+    }
+  }, [profile.learnedWords, profile.deletedWordIds]);
 
   // Handle switching to a different user profile
   const handleUserSwitched = (newUser: UserAccount) => {

@@ -446,3 +446,119 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Get the unified active wordbook for a profile, preserving all distinct entries
+ * (including homographs with the same English spelling but different meanings/POS)
+ * and stripping legacy 201 words if a large custom library (>= 1000 words) is present.
+ */
+export function getUnifiedWordBook(profile: {
+  learnedWords?: Record<string, WordItem>;
+  deletedWordIds?: string[];
+}): WordItem[] {
+  const deletedSet = new Set(profile.deletedWordIds || []);
+  const learnedEntries = Object.values(profile.learnedWords || {}).filter(
+    (w) => w && !deletedSet.has(w.id)
+  );
+
+  const customOnly = learnedEntries.filter(
+    (w) => w.id.startsWith('custom_') || w.id.startsWith('word_')
+  );
+  const baseLearned =
+    customOnly.length === 1785 ||
+    (customOnly.length >= 1000 && learnedEntries.length - customOnly.length <= 210)
+      ? customOnly
+      : learnedEntries;
+
+  const defaultWords = getAllDefaultWords().filter((w) => !deletedSet.has(w.id));
+
+  // If the profile already holds the full vocabulary (e.g. 1785 words), return baseLearned directly
+  // so homographs (same English word, different entry ID / meaning) are never collapsed.
+  if (baseLearned.length >= defaultWords.length && baseLearned.length > 0) {
+    return baseLearned.map((w) => ({ ...w }));
+  }
+
+  const includeDefaults = !(defaultWords.length <= 210 && baseLearned.length >= 1000);
+
+  const makeCompositeKey = (w: WordItem) =>
+    `${String(w.word || '').toLowerCase().trim()}__${String(w.partOfSpeech || '').trim()}__${String(
+      w.translation || ''
+    ).trim()}`;
+
+  const byKey = new Map<string, WordItem>();
+
+  if (includeDefaults) {
+    defaultWords.forEach((w) => {
+      byKey.set(makeCompositeKey(w), w);
+    });
+  }
+
+  baseLearned.forEach((w) => {
+    byKey.set(makeCompositeKey(w), { ...w });
+  });
+
+  return Array.from(byKey.values());
+}
+
+/**
+ * Extract the user's current active vocabulary list from their profile,
+ * handling both direct 1785-word combined libraries and 1785-word custom imports.
+ */
+export function extractTargetVocabularyFromProfile(profile: {
+  learnedWords?: Record<string, WordItem>;
+  deletedWordIds?: string[];
+}): { words: WordItem[]; shouldReplaceLegacyInProfile: boolean } {
+  const deletedSet = new Set(profile.deletedWordIds || []);
+  const learnedEntries = Object.values(profile.learnedWords || {}).filter(
+    (w) => w && !deletedSet.has(w.id)
+  );
+  const customOnly = learnedEntries.filter(
+    (w) => w.id.startsWith('custom_') || w.id.startsWith('word_')
+  );
+
+  if (
+    customOnly.length === 1785 ||
+    (customOnly.length >= 1000 && learnedEntries.length - customOnly.length > 0 && learnedEntries.length - customOnly.length <= 210)
+  ) {
+    return {
+      words: customOnly,
+      shouldReplaceLegacyInProfile: true,
+    };
+  }
+
+  return {
+    words: getUnifiedWordBook(profile),
+    shouldReplaceLegacyInProfile: false,
+  };
+}
+
+/**
+ * Sync the given vocabulary array into `/src/data/shanghaiWords.ts` on the server
+ * so that it becomes the initial built-in vocabulary for GitHub sync and new profiles.
+ */
+export async function syncVocabularyToSourceFile(
+  words: WordItem[],
+  force: boolean = false
+): Promise<{
+  ok: boolean;
+  updated?: boolean;
+  count?: number;
+  words?: WordItem[];
+  error?: string;
+}> {
+  try {
+    const res = await fetch('/api/sync-default-words', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ words, force }),
+    });
+    if (!res.ok) {
+      return { ok: false, error: `HTTP ${res.status}` };
+    }
+    return await res.json();
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
