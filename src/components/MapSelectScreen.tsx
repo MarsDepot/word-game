@@ -206,6 +206,11 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {MAP_TYPE_DEFINITIONS.map((def) => {
             const isSelected = def.id === selectedMapId;
+            const clearCount =
+              profile.mapClearCounts?.[def.id] ||
+              profile.mapClearCounts?.[`map_${def.id}`] ||
+              0;
+
             return (
               <div
                 key={def.id}
@@ -218,12 +223,12 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
               >
                 <div>
                   {/* Card Header */}
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-2 gap-2">
                     <div className="flex items-center space-x-2 min-w-0">
                       <span className="text-xs font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 shrink-0">
                         MAP 0{def.index}
                       </span>
-                      <h4 className="font-black text-base text-slate-900 dark:text-slate-100 flex items-baseline gap-1 whitespace-nowrap min-w-0">
+                      <h4 className="font-black text-base text-slate-900 dark:text-slate-100 flex items-baseline gap-1 whitespace-nowrap min-w-0 truncate">
                         <span>{parseMapName(def.name).zh}</span>
                         {parseMapName(def.name).en && (
                           <span className="text-xs font-normal text-slate-400 dark:text-slate-400 font-sans tracking-tight">
@@ -234,21 +239,31 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
                     </div>
 
                     {isSelected ? (
-                      <span className="flex items-center space-x-1 px-2.5 py-0.8 bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold rounded-full">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span className="flex items-center space-x-1 px-2.5 py-0.8 bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold rounded-full shrink-0 whitespace-nowrap">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                         <span>已选定</span>
                       </span>
                     ) : (
-                      <span className="text-[11px] text-slate-400 font-medium">
+                      <span className="text-[11px] text-slate-400 font-medium shrink-0 whitespace-nowrap">
                         点击选择
                       </span>
                     )}
                   </div>
 
-                  {/* Ratio Tag (Exact user requirements displayed prominently) */}
-                  <div className="mb-2.5">
+                  {/* Ratio Tag & Clear Count Badge */}
+                  <div className="mb-2.5 flex items-center gap-1.5 flex-wrap">
                     <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700">
                       🎯 {def.ratioDescription}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-xl border whitespace-nowrap ${
+                        clearCount > 0
+                          ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/70'
+                          : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200/60 dark:border-slate-700/60'
+                      }`}
+                    >
+                      <span>🏆</span>
+                      <span>通关 {clearCount} 次</span>
                     </span>
                   </div>
 
@@ -261,7 +276,7 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
                 {/* Boss & Monsters Mini Preview */}
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
                   <div className="flex items-center space-x-2">
-                    <div className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm">
+                    <div className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm shrink-0">
                       {def.boss.avatar}
                     </div>
                     <div className="text-[11px] text-slate-600 dark:text-slate-400">
@@ -269,7 +284,7 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
                     </div>
                   </div>
 
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     3 波次迎战
                   </span>
                 </div>

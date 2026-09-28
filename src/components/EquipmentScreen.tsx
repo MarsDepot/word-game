@@ -119,37 +119,37 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
     <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto space-y-4 md:space-y-6 pb-20">
       {/* Character Profile & RO Stats Allocation Card */}
       <div className="bg-slate-900 rounded-3xl p-4 md:p-5 shadow-md border border-slate-800 transition-colors">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center text-2xl md:text-3xl shadow-sm shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800 gap-2">
+          <div className="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0 flex-1">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center text-2xl md:text-3xl shadow-sm shrink-0">
               {profile.avatar || '⚔️'}
             </div>
-            <div>
-              <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                <h3 className="font-black text-slate-100 text-base md:text-lg">{profile.name}</h3>
-                <span className="text-[10px] md:text-xs px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800/70 text-emerald-300 font-extrabold">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap">
+                <h3 className="font-black text-slate-100 text-sm sm:text-base md:text-lg truncate">{profile.name}</h3>
+                <span className="text-[10px] md:text-xs px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800/70 text-emerald-300 font-extrabold whitespace-nowrap shrink-0">
                   Lv.{profile.level} 初心者
                 </span>
                 {onOpenUserModal && (
                   <button
                     onClick={onOpenUserModal}
-                    className="text-[10px] md:text-[11px] px-2 py-0.5 rounded-full bg-purple-950/80 border border-purple-800/70 hover:bg-purple-900 text-purple-300 font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                    className="text-[10px] md:text-[11px] px-2 py-0.5 rounded-full bg-purple-950/80 border border-purple-800/70 hover:bg-purple-900 text-purple-300 font-bold transition-colors inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                     title="切换或管理学习角色/用户档案"
                   >
-                    <Users className="w-3 h-3" />
+                    <Users className="w-3 h-3 shrink-0" />
                     <span>多用户</span>
                   </button>
                 )}
               </div>
-              <div className="text-[11px] md:text-xs text-slate-400 mt-0.5">
+              <div className="text-[11px] md:text-xs text-slate-400 mt-0.5 truncate">
                 经验: {profile.exp} / {profile.maxExp} | 拥有金币: <span className="text-amber-400 font-bold">{profile.zeny} Zeny</span>
               </div>
             </div>
           </div>
 
-          <div className="text-right">
-            <div className="text-[10px] md:text-xs text-slate-400 font-bold">可用属性点</div>
-            <div className="text-lg md:text-2xl font-black text-purple-400">
+          <div className="text-right shrink-0">
+            <div className="text-[10px] md:text-xs text-slate-400 font-bold whitespace-nowrap">可用属性点</div>
+            <div className="text-base sm:text-lg md:text-2xl font-black text-purple-400 whitespace-nowrap">
               {profile.statPoints} 点
             </div>
           </div>

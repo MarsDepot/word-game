@@ -150,6 +150,7 @@ export interface PlayerProfile {
   furnaceWordIds: string[]; // Words needing review in furnace
   unlockedMapIds: string[];
   defeatedBosses: string[];
+  mapClearCounts?: Record<string, number>; // 每个地图的累计通关次数
   wordsPerBattle?: number; // 每局单词数量 (默认 10)
   selectedMapType?: string; // 选中的地图类型 (solace | qualinesti | sanction | dragon_isles)
 }

@@ -84,6 +84,7 @@ export function getInitialProfile(name: string = '初心冒险者', avatar: stri
     furnaceWordIds: [],
     unlockedMapIds: ['map_prontera'],
     defeatedBosses: [],
+    mapClearCounts: {},
     wordsPerBattle: 20,
     selectedMapType: 'solace',
   };
@@ -149,19 +150,14 @@ export function getAllUsers(): UserAccount[] {
 }
 
 /**
- * Get active user account
+ * Ensure unified words and required fields are present on a UserAccount profile
  */
-export function getCurrentUser(): UserAccount {
-  const users = getAllUsers();
-  const activeUid = localStorage.getItem(ACTIVE_USER_ID_KEY);
-  let user = users[0];
-  if (activeUid) {
-    const found = users.find((u) => u.id === activeUid);
-    if (found) user = found;
-  }
-
-  // Ensure unified words and new settings are present
+function hydrateUserProfile(user: UserAccount): boolean {
   let modified = false;
+  if (!user.profile) {
+    user.profile = getInitialProfile(user.name || '初心冒险者', user.avatar || '⚔️');
+    return true;
+  }
   if (!user.profile.wordsPerBattle) {
     user.profile.wordsPerBattle = 10;
     modified = true;
@@ -170,17 +166,25 @@ export function getCurrentUser(): UserAccount {
     user.profile.selectedMapType = 'solace';
     modified = true;
   }
-  if (!user.profile.learnedWords) {
+  if (!user.profile.learnedWords || typeof user.profile.learnedWords !== 'object') {
     user.profile.learnedWords = {};
     modified = true;
   }
-  if (!user.profile.deletedWordIds) {
+  if (!Array.isArray(user.profile.deletedWordIds)) {
     user.profile.deletedWordIds = [];
+    modified = true;
+  }
+  if (!Array.isArray(user.profile.furnaceWordIds)) {
+    user.profile.furnaceWordIds = [];
+    modified = true;
+  }
+  if (!user.profile.mapClearCounts || typeof user.profile.mapClearCounts !== 'object') {
+    user.profile.mapClearCounts = {};
     modified = true;
   }
 
   // Backfill missing words from ALL_UNIFIED_WORDS (skipping deleted ones)
-  const deletedSet = new Set(user.profile.deletedWordIds || []);
+  const deletedSet = new Set(user.profile.deletedWordIds);
   ALL_UNIFIED_WORDS.forEach((w) => {
     if (deletedSet.has(w.id)) return;
     if (!user.profile.learnedWords[w.id]) {
@@ -196,8 +200,30 @@ export function getCurrentUser(): UserAccount {
     }
   });
 
+  return modified;
+}
+
+/**
+ * Get active user account
+ */
+export function getCurrentUser(): UserAccount {
+  const users = getAllUsers();
+  const activeUid = localStorage.getItem(ACTIVE_USER_ID_KEY);
+  let user = users[0];
+  if (activeUid) {
+    const found = users.find((u) => u.id === activeUid);
+    if (found) user = found;
+  }
+
+  const modified = hydrateUserProfile(user);
+
   if (modified) {
-    saveCurrentUserProfile(user.profile);
+    try {
+      localStorage.setItem(USERS_LIST_KEY, JSON.stringify(users));
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch (e) {
+      console.error('Failed to persist hydrated user profile:', e);
+    }
   }
 
   return user;
@@ -209,10 +235,11 @@ export function getCurrentUser(): UserAccount {
 export function saveCurrentUserProfile(profile: PlayerProfile): void {
   try {
     const users = getAllUsers();
-    const activeUid = getCurrentUser().id;
-    const index = users.findIndex((u) => u.id === activeUid);
+    const activeUid = localStorage.getItem(ACTIVE_USER_ID_KEY);
+    let index = activeUid ? users.findIndex((u) => u.id === activeUid) : 0;
+    if (index === -1) index = 0;
 
-    if (index !== -1) {
+    if (users[index]) {
       users[index].profile = profile;
       users[index].name = profile.name;
       if (profile.avatar) {
@@ -220,8 +247,7 @@ export function saveCurrentUserProfile(profile: PlayerProfile): void {
       }
       users[index].lastPlayedAt = Date.now();
       localStorage.setItem(USERS_LIST_KEY, JSON.stringify(users));
-      // Sync legacy save as fallback
-      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(profile));
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
     }
   } catch (e) {
     console.error('Failed to save user profile:', e);
@@ -236,10 +262,10 @@ export function switchUser(userId: string): UserAccount | null {
     const users = getAllUsers();
     const target = users.find((u) => u.id === userId);
     if (target) {
+      hydrateUserProfile(target);
       target.lastPlayedAt = Date.now();
       localStorage.setItem(ACTIVE_USER_ID_KEY, userId);
       localStorage.setItem(USERS_LIST_KEY, JSON.stringify(users));
-      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(target.profile));
       return target;
     }
   } catch (e) {
@@ -268,7 +294,6 @@ export function createUser(name: string, avatar: string = '⚔️'): UserAccount
     users.push(newUser);
     localStorage.setItem(USERS_LIST_KEY, JSON.stringify(users));
     localStorage.setItem(ACTIVE_USER_ID_KEY, newUser.id);
-    localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(newProfile));
   } catch (e) {
     console.error('Failed to create new user:', e);
   }
@@ -286,15 +311,15 @@ export function deleteUser(userId: string): { success: boolean; newActiveUser?: 
       return { success: false, error: '至少需要保留一个用户档案！' };
     }
 
+    const activeUid = localStorage.getItem(ACTIVE_USER_ID_KEY) || users[0].id;
     const filtered = users.filter((u) => u.id !== userId);
-    let nextActiveUser = getCurrentUser();
+    let nextActiveUser = filtered.find((u) => u.id === activeUid) || filtered[0];
 
-    if (nextActiveUser.id === userId) {
-      nextActiveUser = filtered[0];
+    if (activeUid === userId) {
       localStorage.setItem(ACTIVE_USER_ID_KEY, nextActiveUser.id);
-      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(nextActiveUser.profile));
     }
 
+    hydrateUserProfile(nextActiveUser);
     localStorage.setItem(USERS_LIST_KEY, JSON.stringify(filtered));
     return { success: true, newActiveUser: nextActiveUser };
   } catch (e) {
@@ -318,9 +343,6 @@ export function updateUserMeta(userId: string, name: string, avatar?: string): U
       target.lastPlayedAt = Date.now();
 
       localStorage.setItem(USERS_LIST_KEY, JSON.stringify(users));
-      if (getCurrentUser().id === userId) {
-        localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(target.profile));
-      }
       return target;
     }
   } catch (e) {

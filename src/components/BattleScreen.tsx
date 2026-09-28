@@ -61,11 +61,13 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const [isMonsterHit, setIsMonsterHit] = useState(false);
   const [isSlashFx, setIsSlashFx] = useState(false);
   const [screenShake, setScreenShake] = useState(false);
+  const [comboShake, setComboShake] = useState(false);
 
   // Result dialogs
   const [battleFinished, setBattleFinished] = useState<'victory' | 'defeat' | null>(null);
   const [droppedItem, setDroppedItem] = useState<Equipment | null>(null);
   const [droppedCard, setDroppedCard] = useState<CardItem | null>(null);
+  const [clearedMapCount, setClearedMapCount] = useState<number>(0);
 
   // Timer countdown
   const baseTime = 10; // 10s base
@@ -193,11 +195,8 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     setIsAnswered(true);
     setSelectedOption(option);
 
-    // Robust multi-check to ensure clicking correct answer is 100% evaluated as correct
-    const isCorrect =
-      option === correctAnswerText ||
-      option === currentWord.translation ||
-      (currentWord.options && currentWord.options.length > 0 && option === currentWord.options[0]);
+    // Evaluate correctness based solely on correctAnswerText
+    const isCorrect = option === correctAnswerText;
     setIsCorrectAnswer(isCorrect);
 
     if (isCorrect) {
@@ -219,6 +218,17 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     const newCombo = combo + 1;
     setCombo(newCombo);
     if (newCombo > maxCombo) setMaxCombo(newCombo);
+
+    // Trigger slight screen shake when user answers words correctly in a row
+    if (newCombo >= 2) {
+      setComboShake(false);
+      requestAnimationFrame(() => {
+        setComboShake(true);
+      });
+      setTimeout(() => {
+        setComboShake(false);
+      }, 350);
+    }
 
     // Calculate Damage
     const baseAtk = 25 + profile.stats.str * 4 + (profile.equipment.weapon?.atkBonus || 0);
@@ -469,6 +479,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         ? [...prev.cards, droppedCrd]
         : prev.cards;
 
+      const mapKey = map.id.replace(/^map_/, '');
+      const prevMapClears =
+        prev.mapClearCounts?.[mapKey] ||
+        prev.mapClearCounts?.[map.id] ||
+        0;
+      const nextMapClears = prevMapClears + 1;
+      setClearedMapCount(nextMapClears);
+
       return {
         ...prev,
         level: newLevel,
@@ -479,6 +497,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         refineStones: prev.refineStones + 2, // reward 2 refining stones for boss defeat
         unlockedMapIds: newUnlockedMaps,
         defeatedBosses: newDefeated,
+        mapClearCounts: {
+          ...(prev.mapClearCounts || {}),
+          [mapKey]: nextMapClears,
+          [map.id]: nextMapClears,
+        },
         inventory: newInventory,
         cards: newCards,
       };
@@ -486,7 +509,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   };
 
   return (
-    <div className={`relative flex flex-col h-full select-none bg-gradient-to-b ${map.bgGradient} ${screenShake ? 'animate-shake' : ''}`}>
+    <div className={`relative flex flex-col h-full select-none bg-gradient-to-b ${map.bgGradient} ${screenShake ? 'animate-shake' : comboShake ? 'animate-combo-shake' : ''}`}>
       {/* Top Header: Wave, Combo, Score */}
       <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md px-3 md:px-5 py-2 md:py-3 border-b border-sky-100 dark:border-slate-800 flex items-center justify-between text-xs md:text-sm">
         <div className="flex items-center space-x-2 md:space-x-3">
@@ -531,6 +554,50 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
       {/* Arena / Monster Stage */}
       <div className="relative flex-1 flex flex-col items-center justify-center p-4 md:p-6 min-h-[220px]">
+        {/* Center-Screen Dynamic Scaling Combo! Counter */}
+        {combo >= 2 && (
+          <div
+            className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-40 pointer-events-none flex items-center justify-center"
+            aria-live="polite"
+          >
+            <div
+              key={combo}
+              style={{
+                transform: `scale(${Math.min(1 + (combo - 2) * 0.14, 2.35)})`,
+              }}
+              className="transition-transform duration-200 ease-out"
+            >
+              <div className="animate-combo-pop flex flex-col items-center justify-center px-4 py-1.5 rounded-2xl bg-black/35 dark:bg-slate-950/50 backdrop-blur-[2px] border border-amber-400/50 shadow-[0_0_24px_rgba(245,158,11,0.45)]">
+                <div className="flex items-baseline gap-1.5 leading-none">
+                  <span
+                    className={`font-black italic tracking-tighter drop-shadow-[0_3px_6px_rgba(0,0,0,0.85)] text-2xl sm:text-3xl md:text-4xl bg-clip-text text-transparent ${
+                      combo >= 8
+                        ? 'bg-gradient-to-b from-fuchsia-300 via-rose-400 to-amber-300'
+                        : combo >= 5
+                        ? 'bg-gradient-to-b from-yellow-200 via-orange-400 to-rose-500'
+                        : 'bg-gradient-to-b from-yellow-200 via-amber-400 to-orange-500'
+                    }`}
+                  >
+                    {combo}
+                  </span>
+                  <span
+                    className={`font-black italic tracking-wide drop-shadow-[0_2px_5px_rgba(0,0,0,0.85)] text-lg sm:text-xl md:text-2xl bg-clip-text text-transparent ${
+                      combo >= 8
+                        ? 'bg-gradient-to-r from-amber-200 via-pink-300 to-purple-300'
+                        : 'bg-gradient-to-r from-yellow-100 via-amber-300 to-orange-400'
+                    }`}
+                  >
+                    Combo!
+                  </span>
+                </div>
+                <span className="text-[10px] font-extrabold text-amber-200 drop-shadow mt-0.5 tracking-wider">
+                  ⚡ 连击伤害 +{Math.round(Math.min(combo * 8, 120))}%
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Floating Damage Numbers */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
           {damagePopups.map((popup) => (
@@ -707,10 +774,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             {(shuffledOptions.length > 0 ? shuffledOptions : currentWord.options).map((option, idx) => {
               const isEliminated = eliminatedOptions.includes(option);
               const isSelected = selectedOption === option;
-              const isOptionCorrect =
-                option === correctAnswerText ||
-                option === currentWord.translation ||
-                (currentWord.options && currentWord.options.length > 0 && option === currentWord.options[0]);
+              const isOptionCorrect = option === correctAnswerText;
 
               let btnStyle = 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-98 shadow-xs';
               if (isEliminated) {
@@ -812,6 +876,12 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">🔥 获得记忆精炼石:</span>
                     <span className="font-bold text-purple-600 dark:text-purple-400">+2 颗</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">🏆 本地图累计通关:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {clearedMapCount || (profile.mapClearCounts?.[map.id.replace(/^map_/, '')] || 1)} 次
+                    </span>
                   </div>
                   {droppedCard && (
                     <div className="flex items-center space-x-2 bg-purple-50 dark:bg-purple-950/50 p-2 rounded-xl border border-purple-200 dark:border-purple-800/80 text-purple-900 dark:text-purple-200 mt-1">
