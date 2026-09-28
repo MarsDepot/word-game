@@ -62,9 +62,10 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
     return selectWordsForBattle(
       profile.learnedWords || {},
       selectedMapId,
-      currentWordsCount
+      currentWordsCount,
+      profile.deletedWordIds || []
     );
-  }, [profile.learnedWords, selectedMapId, currentWordsCount]);
+  }, [profile.learnedWords, selectedMapId, currentWordsCount, profile.deletedWordIds]);
 
   // Handle changing map type
   const handleSelectMapType = (mapId: MapTypeId) => {

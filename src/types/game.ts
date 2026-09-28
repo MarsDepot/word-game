@@ -146,6 +146,7 @@ export interface PlayerProfile {
   inventory: Equipment[];
   cards: CardItem[];
   learnedWords: Record<string, WordItem>; // Indexed by id
+  deletedWordIds: string[]; // Deleted word IDs to prevent re-adding
   furnaceWordIds: string[]; // Words needing review in furnace
   unlockedMapIds: string[];
   defeatedBosses: string[];

@@ -44,15 +44,18 @@ export const WordImportExportModal: React.FC<WordImportExportModalProps> = ({
 
   // Gather all unique words
   const allGameWords = useMemo(() => {
-    const defaultWords = getAllDefaultWords();
+    const deletedSet = new Set(profile.deletedWordIds || []);
+    const defaultWords = getAllDefaultWords().filter((w) => !deletedSet.has(w.id));
     const learnedMap = profile.learnedWords || {};
     const map = new Map<string, WordItem>();
 
     defaultWords.forEach((w) => map.set(w.id, w));
-    Object.values(learnedMap).forEach((w) => map.set(w.id, w));
+    Object.values(learnedMap).forEach((w) => {
+      if (!deletedSet.has(w.id)) map.set(w.id, w);
+    });
 
     return Array.from(map.values());
-  }, [profile.learnedWords]);
+  }, [profile.learnedWords, profile.deletedWordIds]);
 
   const learnedWordsList = useMemo(() => {
     return Object.values(profile.learnedWords || {});

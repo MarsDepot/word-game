@@ -341,9 +341,12 @@ function shuffleArray<T>(arr: T[]): T[] {
 export function selectWordsForBattle(
   wordBook: Record<string, WordItem> | WordItem[],
   mapTypeId: MapTypeId,
-  targetCount: number = 10
+  targetCount: number = 10,
+  deletedWordIds: string[] = []
 ): { words: WordItem[]; stats: { mastered: number; familiar: number; new: number } } {
-  const allWords = Array.isArray(wordBook) ? wordBook : Object.values(wordBook);
+  const deletedSet = new Set(deletedWordIds);
+  const rawWords = Array.isArray(wordBook) ? wordBook : Object.values(wordBook);
+  const allWords = rawWords.filter((w) => !deletedSet.has(w.id));
 
   if (allWords.length === 0) {
     return { words: [], stats: { mastered: 0, familiar: 0, new: 0 } };

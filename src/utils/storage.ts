@@ -80,6 +80,7 @@ export function getInitialProfile(name: string = '初心冒险者', avatar: stri
       { ...ALL_RO_CARDS[0] }, // Poring Card
     ],
     learnedWords: initialLearnedWords,
+    deletedWordIds: [],
     furnaceWordIds: [],
     unlockedMapIds: ['map_prontera'],
     defeatedBosses: [],
@@ -173,9 +174,15 @@ export function getCurrentUser(): UserAccount {
     user.profile.learnedWords = {};
     modified = true;
   }
+  if (!user.profile.deletedWordIds) {
+    user.profile.deletedWordIds = [];
+    modified = true;
+  }
 
-  // Backfill missing words from ALL_UNIFIED_WORDS
+  // Backfill missing words from ALL_UNIFIED_WORDS (skipping deleted ones)
+  const deletedSet = new Set(user.profile.deletedWordIds || []);
   ALL_UNIFIED_WORDS.forEach((w) => {
+    if (deletedSet.has(w.id)) return;
     if (!user.profile.learnedWords[w.id]) {
       user.profile.learnedWords[w.id] = {
         ...w,

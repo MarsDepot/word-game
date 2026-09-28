@@ -63,14 +63,19 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
 
   // Unified single word book (default game words + learned/custom user words)
   const allCombinedWords = useMemo(() => {
-    const defaultWords = getAllDefaultWords();
+    const deletedSet = new Set(profile.deletedWordIds || []);
+    const defaultWords = getAllDefaultWords().filter((w) => !deletedSet.has(w.id));
     const map = new Map<string, WordItem>();
 
     defaultWords.forEach((w) => map.set(w.id, w));
-    Object.values(profile.learnedWords || {}).forEach((w) => map.set(w.id, { ...w }));
+    Object.values(profile.learnedWords || {}).forEach((w) => {
+      if (!deletedSet.has(w.id)) {
+        map.set(w.id, { ...w });
+      }
+    });
 
     return Array.from(map.values());
-  }, [profile.learnedWords]);
+  }, [profile.learnedWords, profile.deletedWordIds]);
 
   // Overall statistics for mastery
   const masteryStats = useMemo(() => {
@@ -127,6 +132,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
     soundManager.playClick();
 
     onUpdateProfile((prev) => {
+      const nextDeleted = Array.from(new Set([...(prev.deletedWordIds || []), ...ids]));
       const nextLearned = { ...prev.learnedWords };
       ids.forEach((id) => {
         delete nextLearned[id];
@@ -136,6 +142,7 @@ export const CardAlbumScreen: React.FC<CardAlbumScreenProps> = ({ profile, onUpd
 
       return {
         ...prev,
+        deletedWordIds: nextDeleted,
         furnaceWordIds: nextFurnace,
         learnedWords: nextLearned,
       };
