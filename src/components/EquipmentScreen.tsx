@@ -88,19 +88,36 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
     setTimeout(() => setRefineFeedback(null), 2500);
   };
 
-  // Socket Card into slot
+  // Socket or Replace Card in slot (returns previous slotted card back to profile.cards)
   const handleSocketCard = (card: CardItem) => {
     const currentEquip = profile.equipment[selectedSlot];
     if (!currentEquip) return;
 
     soundManager.playLevelUp();
+    const prevSlotted = currentEquip.slottedCard;
+
     onUpdateProfile((prev) => {
+      const targetEquip = prev.equipment[selectedSlot];
+      if (!targetEquip) return prev;
+
+      const previousCard = targetEquip.slottedCard;
       const updatedEquip: Equipment = {
-        ...currentEquip,
+        ...targetEquip,
         slottedCard: card,
       };
-      // Remove slotted card from loose cards
-      const nextCards = prev.cards.filter((c) => c.id !== card.id);
+
+      // Remove newly slotted card from loose cards
+      let nextCards = prev.cards.filter((c) => c.id !== card.id);
+
+      // Put the replaced card back into loose cards instead of deleting it
+      if (
+        previousCard &&
+        previousCard.id !== card.id &&
+        !nextCards.some((c) => c.id === previousCard.id)
+      ) {
+        nextCards = [previousCard, ...nextCards];
+      }
+
       return {
         ...prev,
         equipment: {
@@ -110,7 +127,50 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
         cards: nextCards,
       };
     });
+
     setShowSocketModal(false);
+    if (prevSlotted && prevSlotted.id !== card.id) {
+      setRefineFeedback(`已将【${prevSlotted.name}】替换为【${card.name}】，原卡片已放回背包！`);
+    } else {
+      setRefineFeedback(`成功镶嵌【${card.name}】！`);
+    }
+    setTimeout(() => setRefineFeedback(null), 2500);
+  };
+
+  // Unsocket Card from current equipment slot back to loose cards
+  const handleUnsocketCard = () => {
+    const currentEquip = profile.equipment[selectedSlot];
+    if (!currentEquip || !currentEquip.slottedCard) return;
+
+    const removedCard = currentEquip.slottedCard;
+    soundManager.playClick();
+
+    onUpdateProfile((prev) => {
+      const targetEquip = prev.equipment[selectedSlot];
+      if (!targetEquip || !targetEquip.slottedCard) return prev;
+
+      const cardToReturn = targetEquip.slottedCard;
+      const updatedEquip: Equipment = {
+        ...targetEquip,
+        slottedCard: null,
+      };
+
+      const nextCards = prev.cards.some((c) => c.id === cardToReturn.id)
+        ? prev.cards
+        : [cardToReturn, ...prev.cards];
+
+      return {
+        ...prev,
+        equipment: {
+          ...prev.equipment,
+          [selectedSlot]: updatedEquip,
+        },
+        cards: nextCards,
+      };
+    });
+
+    setRefineFeedback(`已卸下【${removedCard.name}】并放回卡片背包！`);
+    setTimeout(() => setRefineFeedback(null), 2500);
   };
 
   const currentEquippedItem = profile.equipment[selectedSlot];
@@ -297,12 +357,22 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
                   <Sparkles className="w-3.5 h-3.5 text-purple-400" />
                   <span>插槽卡片</span>
                 </span>
-                <button
-                  onClick={() => setShowSocketModal(true)}
-                  className="text-xs md:text-sm text-purple-400 hover:text-purple-300 font-bold"
-                >
-                  {currentEquippedItem.slottedCard ? '更换卡片' : '+ 镶嵌RO魔物卡'}
-                </button>
+                <div className="flex items-center gap-2.5">
+                  {currentEquippedItem.slottedCard && (
+                    <button
+                      onClick={handleUnsocketCard}
+                      className="text-xs md:text-sm text-slate-400 hover:text-rose-400 font-bold transition-colors"
+                    >
+                      卸下卡片
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowSocketModal(true)}
+                    className="text-xs md:text-sm text-purple-400 hover:text-purple-300 font-bold"
+                  >
+                    {currentEquippedItem.slottedCard ? '更换卡片' : '+ 镶嵌RO魔物卡'}
+                  </button>
+                </div>
               </div>
 
               {currentEquippedItem.slottedCard ? (
@@ -361,7 +431,9 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
               <h4 className="font-black text-slate-100 text-sm md:text-base flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-purple-400" />
-                <span>选择镶嵌卡片 ({selectedSlot})</span>
+                <span>
+                  {currentEquippedItem?.slottedCard ? '更换插槽卡片' : '选择镶嵌卡片'} ({selectedSlot})
+                </span>
               </h4>
               <button
                 onClick={() => setShowSocketModal(false)}
@@ -371,9 +443,27 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
               </button>
             </div>
 
+            {currentEquippedItem?.slottedCard && (
+              <div className="mb-3 p-2.5 rounded-xl bg-slate-800/90 border border-slate-700 flex items-center justify-between text-xs">
+                <div className="text-slate-300">
+                  当前已镶嵌: <span className="font-bold text-purple-300">[{currentEquippedItem.slottedCard.name}]</span>
+                  <div className="text-[10px] text-slate-400 mt-0.5">选择下方新卡片将自动替换，原卡片会退回背包</div>
+                </div>
+                <button
+                  onClick={() => {
+                    handleUnsocketCard();
+                    setShowSocketModal(false);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-rose-900/70 text-slate-200 hover:text-rose-200 text-[11px] font-bold shrink-0 ml-2 transition-colors"
+                >
+                  卸下
+                </button>
+              </div>
+            )}
+
             {profile.cards.length === 0 ? (
               <div className="text-center py-6 text-slate-400 text-xs">
-                背包中暂无闲置卡片，前往击败魔物或挑战关底BOSS掉落吧！
+                背包中暂无其他闲置卡片，前往击败魔物或挑战关底BOSS掉落吧！
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -394,7 +484,10 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
                         {c.description}
                       </div>
                     </div>
-                    <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    <span className="text-[11px] font-bold text-purple-400 shrink-0 mt-0.5 ml-2 flex items-center gap-0.5">
+                      <span>{currentEquippedItem?.slottedCard ? '替换' : '镶嵌'}</span>
+                      <Check className="w-3.5 h-3.5" />
+                    </span>
                   </button>
                 ))}
               </div>

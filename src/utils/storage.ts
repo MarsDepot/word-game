@@ -184,6 +184,41 @@ function hydrateUserProfile(user: UserAccount): boolean {
     modified = true;
   }
 
+  // Ensure initial starter card (card_poring) and any boss-earned cards that were accidentally lost
+  // during earlier slot replacements are restored into user.profile.cards
+  if (!Array.isArray(user.profile.cards)) {
+    user.profile.cards = [];
+    modified = true;
+  }
+  const slottedIds = new Set(
+    Object.values(user.profile.equipment || {})
+      .map((eq) => eq?.slottedCard?.id)
+      .filter(Boolean) as string[]
+  );
+  const bagIds = new Set(user.profile.cards.map((c) => c.id));
+
+  // 1. Starter Poring Card must always exist in either bag or a slot
+  const starterCard = ALL_RO_CARDS[0];
+  if (starterCard && !slottedIds.has(starterCard.id) && !bagIds.has(starterCard.id)) {
+    user.profile.cards.push({ ...starterCard });
+    bagIds.add(starterCard.id);
+    modified = true;
+  }
+
+  // 2. Ensure total owned cards (bag + slotted) is at least 1 + number of defeated bosses
+  const minExpectedCards = Math.min(
+    ALL_RO_CARDS.length,
+    1 + (Array.isArray(user.profile.defeatedBosses) ? user.profile.defeatedBosses.length : 0)
+  );
+  for (const cardDef of ALL_RO_CARDS) {
+    if (bagIds.size + slottedIds.size >= minExpectedCards) break;
+    if (!slottedIds.has(cardDef.id) && !bagIds.has(cardDef.id)) {
+      user.profile.cards.push({ ...cardDef });
+      bagIds.add(cardDef.id);
+      modified = true;
+    }
+  }
+
   // If the user has imported a full custom word library (e.g., 1785 words) alongside the old 201 default words,
   // remove the old 201 default words so only the user's current library remains as the initial baseline.
   const learnedEntries = Object.values(user.profile.learnedWords);

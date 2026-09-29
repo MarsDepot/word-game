@@ -479,10 +479,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       // 1. Try to find the exact boss card
       const bossKeyword = map.boss.name.split(' ')[0];
       const bossCardMatch = ALL_RO_CARDS.find((c) => c.monsterName.includes(bossKeyword) || bossKeyword.includes(c.monsterName));
-      
+
+      const isCardOwned = (cardId: string) =>
+        profile.cards.some((pc) => pc.id === cardId) ||
+        Object.values(profile.equipment).some((eq) => eq?.slottedCard?.id === cardId);
+
       // 2. If unowned, definitely drop boss card; otherwise pick an unobtained card or random card
-      const unownedCards = ALL_RO_CARDS.filter((c) => !profile.cards.some((pc) => pc.id === c.id));
-      if (bossCardMatch && (!profile.cards.some((pc) => pc.id === bossCardMatch.id) || unownedCards.length === 0)) {
+      const unownedCards = ALL_RO_CARDS.filter((c) => !isCardOwned(c.id));
+      if (bossCardMatch && (!isCardOwned(bossCardMatch.id) || unownedCards.length === 0)) {
         droppedCrd = bossCardMatch;
       } else if (unownedCards.length > 0) {
         droppedCrd = unownedCards[Math.floor(Math.random() * unownedCards.length)];
@@ -537,7 +541,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         : [...prev.defeatedBosses, map.boss.id];
 
       const newInventory = droppedGear ? [...prev.inventory, droppedGear] : prev.inventory;
-      const newCards = droppedCrd && !prev.cards.some((c) => c.id === droppedCrd?.id)
+      const alreadyHasDroppedCard =
+        droppedCrd &&
+        (prev.cards.some((c) => c.id === droppedCrd?.id) ||
+          Object.values(prev.equipment).some((eq) => eq?.slottedCard?.id === droppedCrd?.id));
+      const newCards = droppedCrd && !alreadyHasDroppedCard
         ? [...prev.cards, droppedCrd]
         : prev.cards;
 
