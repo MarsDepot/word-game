@@ -6,6 +6,7 @@ import { ROGUELITE_PERKS, ALL_RO_CARDS } from '../data/words';
 import { MonsterAvatar } from './MonsterAvatar';
 import { soundManager } from '../audio/soundManager';
 import { getWordMastery, getMasteryLabel, getMasteryColor, recordWordAnswer } from '../utils/wordMastery';
+import { sanitizeWordItem } from '../utils/wordHelpers';
 
 interface BattleScreenProps {
   map: GameMap;
@@ -130,7 +131,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     if (!words || words.length === 0) return;
     const baseWord = words[wordPoolIndex % words.length];
     setWordPoolIndex((prev) => prev + 1);
-    const randWord = profile.learnedWords[baseWord.id] || baseWord;
+    const randWord = sanitizeWordItem(profile.learnedWords[baseWord.id] || baseWord);
     setCurrentWord(randWord);
     setSelectedOption(null);
     setIsAnswered(false);

@@ -75,18 +75,26 @@ function syncDefaultVocabularyPlugin(): Plugin {
               }
             }
 
+            const cleanOpt = (s: any) =>
+              String(s || '')
+                .replace(/^\[\]\s*/g, '')
+                .replace(/\[[^\]]*\]/g, '')
+                .replace(/^\s*\/\s*[a-zA-Z\-\s]+\s*(?:\([^)]*\))?\s*/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
             const allTranslations = rawWords
-              .map((w: any) => String(w?.translation || '').trim())
+              .map((w: any) => cleanOpt(w?.translation))
               .filter(Boolean);
 
             const cleanWords = rawWords.map((w: any, idx: number) => {
               const wordStr = String(w?.word || `word_${idx + 1}`).trim();
               const slug = wordStr.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || `${idx + 1}`;
               const id = `w_${idx + 1}_${slug}`;
-              const translation = String(w?.translation || '未知释义').trim();
+              const translation = cleanOpt(w?.translation) || '未知释义';
 
               let options: string[] = Array.isArray(w?.options)
-                ? w.options.map((o: any) => String(o || '').trim()).filter(Boolean)
+                ? w.options.map((o: any) => cleanOpt(o)).filter(Boolean)
                 : [];
 
               if (!options.includes(translation)) {

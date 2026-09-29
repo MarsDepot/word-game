@@ -4,6 +4,7 @@
 import { PlayerProfile, WordItem, UserAccount } from '../types/game';
 import { INITIAL_EQUIPMENT, ALL_RO_CARDS, GAME_MAPS } from '../data/words';
 import { ALL_UNIFIED_WORDS } from '../data/shanghaiWords';
+import { sanitizeWordItem } from './wordHelpers';
 
 const USERS_LIST_KEY = 'word_ragnarok_users_v2';
 const ACTIVE_USER_ID_KEY = 'word_ragnarok_active_uid_v2';
@@ -199,6 +200,23 @@ function hydrateUserProfile(user: UserAccount): boolean {
     );
     modified = true;
   }
+
+  // Sanitize all existing learnedWords so any `[]` prefix or phonetic artifact in translation/options is cleaned
+  Object.keys(user.profile.learnedWords).forEach((id) => {
+    const item = user.profile.learnedWords[id];
+    if (!item) return;
+    const cleaned = sanitizeWordItem(item);
+    if (
+      cleaned.word !== item.word ||
+      cleaned.translation !== item.translation ||
+      cleaned.partOfSpeech !== item.partOfSpeech ||
+      cleaned.phonetic !== item.phonetic ||
+      JSON.stringify(cleaned.options) !== JSON.stringify(item.options)
+    ) {
+      user.profile.learnedWords[id] = cleaned;
+      modified = true;
+    }
+  });
 
   // Backfill missing words from ALL_UNIFIED_WORDS (skipping deleted ones and words already present by composite key)
   const deletedSet = new Set(user.profile.deletedWordIds);

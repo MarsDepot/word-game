@@ -378,13 +378,117 @@ function splitCsvLine(line: string, separator: string = ','): string[] {
 }
 
 /**
+ * Strip any phonetic brackets `[...]` or redundant leading POS/synonym markers from an option/translation string
+ */
+export function sanitizeOptionText(raw: string): string {
+  return String(raw || '')
+    .replace(/^\[\]\s*/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    .replace(/\(\s*=\s*[^)]*\)/g, '')
+    .replace(/\(\s*〈[美英]〉[^)]*\)/g, '')
+    .replace(/^\s*\/\s*[a-zA-Z\-\s]+\s*(?:\([^)]*\))?\s*/g, '')
+    .replace(/\/\s*policewoman\s*(?:\([^)]*\))?/gi, '')
+    .replace(/^\s*\((?:a\.m\.|p\.m\.)\)\s*/i, '')
+    .replace(
+      /\((?:n|v|vt|vi|adj|adv|prep|conj|pron|det|num|art|interj|abbr|aux\.\s*v|modal\s*v)(?:[\.\/\s]+(?:n|v|vt|vi|adj|adv|prep|conj|pron|det|num|art|interj|abbr|aux\.\s*v|modal\s*v))*\.?\)/gi,
+      ''
+    )
+    .replace(/\(\s*hostess\s+n\.\s*/gi, '(hostess ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Clean a WordItem entry's word, phonetic, partOfSpeech, translation, and options so no `[]` artifacts remain
+ */
+export function sanitizeWordItem(w: WordItem): WordItem {
+  let word = String(w.word || '').trim();
+  let phonetic = String(w.phonetic || '').trim();
+  let pos = String(w.partOfSpeech || 'n.').trim();
+  let rawTrans = String(w.translation || '').trim();
+
+  if (word.startsWith('be [/biː/]')) {
+    word = 'be';
+    phonetic = '[/biː/]';
+    pos = 'v.';
+    rawTrans = '是；成为(原形，其人称和时态形式有 am, is, are, was, were, being, been)';
+  } else if (word.startsWith('maths [/mæθs/]')) {
+    word = 'maths';
+    phonetic = '[/mæθs/]';
+    pos = 'n.';
+    rawTrans = '(通常作单数用)数学';
+  } else if (word.startsWith('mother [/ˈmʌðə(r)/]')) {
+    word = 'mother';
+    phonetic = '[/ˈmʌðə(r)/]';
+    pos = 'n.';
+    rawTrans = '母亲';
+  } else if (word === 'ought' && pos === 'to') {
+    word = 'ought to';
+    pos = 'aux. v.';
+  } else if (word === 'Britain' && pos === 'U.K.') {
+    pos = 'n.';
+  } else if (word === 'e-mail' && pos === 'email') {
+    pos = 'n./v.';
+  } else if (word === 'television' && pos === 'TV') {
+    pos = 'n.';
+  }
+
+  const phoMatch = rawTrans.match(/\[\/[^\[\]]+\/\]/);
+  if (phoMatch && (!phonetic || !phonetic.startsWith('[/'))) {
+    phonetic = phoMatch[0];
+  }
+
+  const posMatches = [...rawTrans.matchAll(/\(([a-z\.\s\/]+)\)/gi)];
+  for (const pm of posMatches) {
+    const candidate = pm[1].trim();
+    if (
+      /^(?:n|v|vt|vi|adj|adv|prep|conj|pron|det|num|art|interj|abbr|aux\.\s*v|modal\s*v)(?:[\.\/\s]+(?:n|v|vt|vi|adj|adv|prep|conj|pron|det|num|art|interj|abbr|aux\.\s*v|modal\s*v))*\.?$/i.test(
+        candidate
+      )
+    ) {
+      pos = candidate;
+    }
+  }
+
+  const cleanTrans = sanitizeOptionText(rawTrans) || rawTrans;
+  const cleanOpts = (w.options || [])
+    .map((o) => sanitizeOptionText(o))
+    .filter(Boolean);
+
+  if (!cleanOpts.includes(cleanTrans)) {
+    cleanOpts.unshift(cleanTrans);
+  }
+  const defaultFallbacks = ['苹果', '希望；愿望', '勇敢的', '探索；发现', '魔法；法术', '坚固的盾牌', '快速奔跑'];
+  while (cleanOpts.length < 4) {
+    const pick = defaultFallbacks.find((f) => f !== cleanTrans && !cleanOpts.includes(f));
+    cleanOpts.push(pick || `选项 ${cleanOpts.length + 1}`);
+  }
+
+  return {
+    ...w,
+    word,
+    phonetic,
+    partOfSpeech: pos,
+    translation: cleanTrans,
+    options: Array.from(new Set(cleanOpts)).slice(0, 4),
+  };
+}
+
+/**
  * Generate 4 multiple choice options with 1 correct and 3 random unique distractors
  */
 export function generateOptionsForTranslation(
   correctTranslation: string,
   candidatePool: string[]
 ): string[] {
-  const uniquePool = Array.from(new Set(candidatePool.filter((t) => t && t !== correctTranslation)));
+  const cleanCorrect = sanitizeOptionText(correctTranslation) || correctTranslation;
+  const uniquePool = Array.from(
+    new Set(
+      candidatePool
+        .map((t) => sanitizeOptionText(t))
+        .filter((t) => t && t !== cleanCorrect)
+    )
+  );
 
   // Shuffle pool to pick 3 distractors
   const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
@@ -393,12 +497,12 @@ export function generateOptionsForTranslation(
   // Fallback defaults if pool is small
   const defaultFallbacks = ['苹果', '希望；愿望', '勇敢的', '探索；发现', '魔法；法术', '坚固的盾牌', '快速奔跑'];
   while (distractors.length < 3) {
-    const pick = defaultFallbacks.find((f) => f !== correctTranslation && !distractors.includes(f));
+    const pick = defaultFallbacks.find((f) => f !== cleanCorrect && !distractors.includes(f));
     distractors.push(pick || `释义 ${distractors.length + 1}`);
   }
 
   // Combine and shuffle 4 options
-  const options = [correctTranslation, ...distractors.slice(0, 3)];
+  const options = [cleanCorrect, ...distractors.slice(0, 3)];
   return options.sort(() => Math.random() - 0.5);
 }
 
@@ -475,7 +579,7 @@ export function getUnifiedWordBook(profile: {
   // If the profile already holds the full vocabulary (e.g. 1785 words), return baseLearned directly
   // so homographs (same English word, different entry ID / meaning) are never collapsed.
   if (baseLearned.length >= defaultWords.length && baseLearned.length > 0) {
-    return baseLearned.map((w) => ({ ...w }));
+    return baseLearned.map((w) => sanitizeWordItem(w));
   }
 
   const includeDefaults = !(defaultWords.length <= 210 && baseLearned.length >= 1000);
@@ -489,12 +593,14 @@ export function getUnifiedWordBook(profile: {
 
   if (includeDefaults) {
     defaultWords.forEach((w) => {
-      byKey.set(makeCompositeKey(w), w);
+      const clean = sanitizeWordItem(w);
+      byKey.set(makeCompositeKey(clean), clean);
     });
   }
 
   baseLearned.forEach((w) => {
-    byKey.set(makeCompositeKey(w), { ...w });
+    const clean = sanitizeWordItem(w);
+    byKey.set(makeCompositeKey(clean), clean);
   });
 
   return Array.from(byKey.values());
@@ -521,7 +627,7 @@ export function extractTargetVocabularyFromProfile(profile: {
     (customOnly.length >= 1000 && learnedEntries.length - customOnly.length > 0 && learnedEntries.length - customOnly.length <= 210)
   ) {
     return {
-      words: customOnly,
+      words: customOnly.map((w) => sanitizeWordItem(w)),
       shouldReplaceLegacyInProfile: true,
     };
   }
