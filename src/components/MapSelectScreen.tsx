@@ -24,6 +24,7 @@ import {
 import { MonsterAvatar } from './MonsterAvatar';
 import { soundManager } from '../audio/soundManager';
 import { getMasteryStats } from '../utils/wordMastery';
+import { getUnifiedWordBook } from '../utils/wordHelpers';
 
 interface MapSelectScreenProps {
   profile: PlayerProfile;
@@ -52,20 +53,25 @@ export const MapSelectScreen: React.FC<MapSelectScreenProps> = ({
     );
   }, [selectedMapId]);
 
+  // Unified word book
+  const unifiedWords = useMemo(() => {
+    return getUnifiedWordBook(profile);
+  }, [profile.learnedWords, profile.deletedWordIds]);
+
   // Overall dictionary stats
   const poolStats = useMemo(() => {
-    return getMasteryStats(profile.learnedWords || {});
-  }, [profile.learnedWords]);
+    return getMasteryStats(unifiedWords);
+  }, [unifiedWords]);
 
   // Compute selected words preview for current map & count
   const selectionPreview = useMemo(() => {
     return selectWordsForBattle(
-      profile.learnedWords || {},
+      unifiedWords,
       selectedMapId,
       currentWordsCount,
       profile.deletedWordIds || []
     );
-  }, [profile.learnedWords, selectedMapId, currentWordsCount, profile.deletedWordIds]);
+  }, [unifiedWords, selectedMapId, currentWordsCount, profile.deletedWordIds]);
 
   // Handle changing map type
   const handleSelectMapType = (mapId: MapTypeId) => {

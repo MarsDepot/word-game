@@ -28,6 +28,24 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const totalWaves = 3; // Wave 1, Wave 2, Boss Wave
   const isBossWave = waveIndex === totalWaves - 1;
 
+  // Total words selected for this battle session (e.g. 20, 40, 60)
+  const totalWords = Math.max(1, map.availableWords?.length || 1);
+  const wave1End = Math.max(1, Math.round(totalWords * 0.3));
+  const wave2End = Math.max(Math.min(totalWords, wave1End + 1), Math.round(totalWords * 0.6));
+
+  const getWaveRange = (wIdx: number) => {
+    if (totalWords < 3) {
+      return { start: 0, end: totalWords, count: totalWords };
+    }
+    if (wIdx === 0) {
+      return { start: 0, end: wave1End, count: Math.max(1, wave1End) };
+    }
+    if (wIdx === 1) {
+      return { start: wave1End, end: wave2End, count: Math.max(1, wave2End - wave1End) };
+    }
+    return { start: wave2End, end: totalWords, count: Math.max(1, totalWords - wave2End) };
+  };
+
   // Active perks chosen during this roguelite run
   const [activePerks, setActivePerks] = useState<RoguelitePerk[]>([]);
   const [showPerkSelect, setShowPerkSelect] = useState(false);
@@ -39,8 +57,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const [playerHp, setPlayerHp] = useState<number>(profile.hp);
   const [hasShield, setHasShield] = useState<boolean>(true);
 
-  // Question & Word state
-  const [wordPoolIndex, setWordPoolIndex] = useState<number>(0);
+  // Question & Word state (0-based index from 0 to totalWords - 1)
+  const [currentWordIndex, setCurrentWordIndex] = useState<number>(0);
+  const wordIndexRef = useRef<number>(0);
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [correctAnswerText, setCorrectAnswerText] = useState<string>('');
@@ -92,19 +111,29 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     };
   }, [isBossWave]);
 
-  // Spawn monster for current wave
+  // Spawn monster for a wave and load the specified word index
+  const startWaveAtWord = (targetWaveIdx: number, targetWordIdx: number) => {
+    const range = getWaveRange(targetWaveIdx);
+    const bossMode = targetWaveIdx >= totalWaves - 1;
+    const baseMonster = bossMode
+      ? map.boss
+      : map.monsters[targetWaveIdx % map.monsters.length] || map.monsters[0];
+    const scaledMaxHp = Math.max(baseMonster.maxHp, range.count * (bossMode ? 90 : 70));
+    const monsterWithScaledHp: Monster = {
+      ...baseMonster,
+      maxHp: scaledMaxHp,
+    };
+
+    setWaveIndex(targetWaveIdx);
+    setCurrentMonster(monsterWithScaledHp);
+    setMonsterHp(scaledMaxHp);
+    loadWordAtIndex(targetWordIdx);
+  };
+
+  // Start Wave 0 at Word 0 when battle mounts
   useEffect(() => {
-    if (isBossWave) {
-      setCurrentMonster(map.boss);
-      setMonsterHp(map.boss.maxHp);
-    } else {
-      const regularMonsters = map.monsters;
-      const selected = regularMonsters[waveIndex % regularMonsters.length] || regularMonsters[0];
-      setCurrentMonster(selected);
-      setMonsterHp(selected.maxHp);
-    }
-    loadNextWord();
-  }, [waveIndex]);
+    startWaveAtWord(0, 0);
+  }, []);
 
   // Timer effect
   useEffect(() => {
@@ -125,12 +154,15 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     };
   }, [isAnswered, battleFinished, showPerkSelect]);
 
-  // Load next word
-  const loadNextWord = () => {
+  // Load word at explicit 0-based index (0 .. totalWords - 1)
+  const loadWordAtIndex = (idx: number) => {
     const words = map.availableWords;
     if (!words || words.length === 0) return;
-    const baseWord = words[wordPoolIndex % words.length];
-    setWordPoolIndex((prev) => prev + 1);
+    const clampedIdx = Math.max(0, Math.min(idx, words.length - 1));
+    wordIndexRef.current = clampedIdx;
+    setCurrentWordIndex(clampedIdx);
+
+    const baseWord = words[clampedIdx];
     const randWord = sanitizeWordItem(profile.learnedWords[baseWord.id] || baseWord);
     setCurrentWord(randWord);
     setSelectedOption(null);
@@ -288,17 +320,25 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       });
     }
 
-    // Apply monster damage
-    const newMonsterHp = Math.max(0, monsterHp - finalDamage);
-    setMonsterHp(newMonsterHp);
+    // Apply monster damage and advance through all configured words in this wave
+    const nextIdx = wordIndexRef.current + 1;
+    const range = getWaveRange(waveIndex);
+    setScore((prev) => prev + finalDamage);
 
-    if (newMonsterHp <= 0) {
-      // Monster Defeated!
+    if (nextIdx >= range.end) {
+      // Final word of this wave completed -> Monster Defeated!
+      setMonsterHp(0);
       handleMonsterDefeated();
     } else {
+      const remainingInWave = Math.max(1, range.end - nextIdx);
+      const proportionalHp = Math.max(
+        1,
+        Math.round(currentMonster.maxHp * (remainingInWave / Math.max(1, range.count)))
+      );
+      setMonsterHp(proportionalHp);
       // Move to next word after brief reading delay
       setTimeout(() => {
-        loadNextWord();
+        loadWordAtIndex(nextIdx);
       }, 1200);
     }
   };
@@ -334,11 +374,15 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       setHasShield(false);
       addDamagePopup('🛡️ 护盾吸收伤害！', false, false, false);
     } else {
-      // Monster attacks player
+      // Monster attacks player (scaled gently for longer 40/60/100 word sessions)
       const baseMonsterAtk = currentMonster.atk;
+      const sessionLengthScale = Math.min(1, 20 / Math.max(20, totalWords));
       const defReduce = Math.min(0.6, profile.stats.vit * 0.02 + (profile.equipment.armor?.defBonus || 0) * 0.01);
       const perkCardReduce = (profile.equipment.armor?.slottedCard?.effect.damageReducePercent || 0) / 100;
-      const actualDmg = Math.max(5, Math.floor(baseMonsterAtk * (1 - defReduce) * (1 - perkCardReduce)));
+      const actualDmg = Math.max(
+        3,
+        Math.floor(baseMonsterAtk * sessionLengthScale * (1 - defReduce) * (1 - perkCardReduce))
+      );
 
       const nextPlayerHp = Math.max(0, playerHp - actualDmg);
       setPlayerHp(nextPlayerHp);
@@ -353,9 +397,23 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       }
     }
 
-    // After review delay, next word
+    // Advance to next word in the session (or finish wave if this was the last word of the wave)
+    const nextIdx = wordIndexRef.current + 1;
+    const range = getWaveRange(waveIndex);
+
     setTimeout(() => {
-      loadNextWord();
+      if (nextIdx >= range.end) {
+        setMonsterHp(0);
+        handleMonsterDefeated();
+      } else {
+        const remainingInWave = Math.max(1, range.end - nextIdx);
+        const proportionalHp = Math.max(
+          1,
+          Math.round(currentMonster.maxHp * (remainingInWave / Math.max(1, range.count)))
+        );
+        setMonsterHp(proportionalHp);
+        loadWordAtIndex(nextIdx);
+      }
     }, 1800);
   };
 
@@ -376,9 +434,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     setEarnedExp((prev) => prev + gainExp);
     setScore((prev) => prev + (isBossWave ? 1500 : 400) + combo * 50);
 
-    if (isBossWave) {
-      // Victory in whole dungeon!
-      handleBossVictory(gainZeny, gainExp);
+    if (isBossWave || wordIndexRef.current + 1 >= totalWords) {
+      // Victory in whole dungeon after completing all selected words!
+      setTimeout(() => {
+        handleBossVictory(gainZeny, gainExp);
+      }, 650);
     } else {
       // Offer Roguelite Perk before next wave
       const available = ROGUELITE_PERKS.filter((p) => !activePerks.some((ap) => ap.id === p.id));
@@ -395,8 +455,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     soundManager.playLevelUp();
     setActivePerks((prev) => [...prev, perk]);
     setShowPerkSelect(false);
-    // Advance to next wave
-    setWaveIndex((prev) => prev + 1);
+    // Advance to next wave starting at the next word index
+    const nextWave = Math.min(totalWaves - 1, waveIndex + 1);
+    startWaveAtWord(nextWave, wordIndexRef.current + 1);
   };
 
   // Epic Boss Victory
@@ -533,7 +594,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
               )}
             </span>
             <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">
-              波次: {waveIndex + 1} / {totalWaves}
+              波次: {waveIndex + 1} / {totalWaves} · 进度: {currentWordIndex + 1} / {totalWords} 词
             </span>
           </div>
         </div>
@@ -693,7 +754,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
                 <span className="text-slate-700 dark:text-slate-300 font-bold">
-                  第 {((wordPoolIndex - 1 + map.availableWords.length) % (map.availableWords.length || 1)) + 1} / {map.availableWords.length} 词
+                  第 {currentWordIndex + 1} / {totalWords} 词
                 </span>
                 {(() => {
                   const currentWordData = profile.learnedWords[currentWord.id] || currentWord;
