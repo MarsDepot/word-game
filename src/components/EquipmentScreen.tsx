@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Shield, Sparkles, Plus, Hammer, ChevronRight, Check, Users } from 'lucide-react';
+import { Shield, Sparkles, Plus, Hammer, ChevronRight, Check, Users, RefreshCw, Package } from 'lucide-react';
 import { PlayerProfile, StatType, Equipment, CardItem } from '../types/game';
+import { ALL_RO_EQUIPMENT } from '../data/words';
 import { soundManager } from '../audio/soundManager';
 
 interface EquipmentScreenProps {
@@ -17,8 +18,80 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
   onOpenUserModal,
 }) => {
   const [selectedSlot, setSelectedSlot] = useState<'weapon' | 'armor' | 'headgear' | 'accessory'>('weapon');
+  const [collectionFilter, setCollectionFilter] = useState<'all' | 'weapon' | 'armor' | 'headgear' | 'accessory'>('all');
   const [showSocketModal, setShowSocketModal] = useState(false);
+  const [showSwapEquipModal, setShowSwapEquipModal] = useState(false);
   const [refineFeedback, setRefineFeedback] = useState<string | null>(null);
+
+  const slotLabels: Record<'weapon' | 'armor' | 'headgear' | 'accessory', string> = {
+    weapon: '武器',
+    armor: '铠甲',
+    headgear: '头饰',
+    accessory: '饰品',
+  };
+
+  // Equip / Replace an item from inventory into its corresponding slot (returns old item to inventory)
+  const handleEquipItem = (targetItem: Equipment) => {
+    const slot = targetItem.slot;
+    const currentEquip = profile.equipment[slot];
+    if (currentEquip && currentEquip.id === targetItem.id) return;
+
+    soundManager.playLevelUp();
+    setSelectedSlot(slot);
+
+    onUpdateProfile((prev) => {
+      const oldEquip = prev.equipment[slot];
+      // Find the actual instance in inventory (preserving any refineLevel it has)
+      const invInstance = prev.inventory.find((i) => i.id === targetItem.id) || targetItem;
+
+      // Inherit slotted card from old equipment if the new equipment doesn't have one
+      const inheritedCard = invInstance.slottedCard || oldEquip?.slottedCard || null;
+      const nextEquipped: Equipment = {
+        ...invInstance,
+        slottedCard: inheritedCard,
+      };
+
+      // Remove newly equipped item from inventory and return old equipped item to inventory (without duplicate card)
+      let nextInventory = prev.inventory.filter((i) => i.id !== invInstance.id);
+      if (oldEquip) {
+        const returnedOldEquip: Equipment = {
+          ...oldEquip,
+          slottedCard: invInstance.slottedCard ? oldEquip.slottedCard : null,
+        };
+        if (!nextInventory.some((i) => i.id === returnedOldEquip.id)) {
+          nextInventory = [returnedOldEquip, ...nextInventory];
+        }
+      }
+
+      const nextEquipment = {
+        ...prev.equipment,
+        [slot]: nextEquipped,
+      };
+
+      const totalEquipHp =
+        (nextEquipment.armor?.hpBonus || 0) +
+        (nextEquipment.headgear?.hpBonus || 0) +
+        (nextEquipment.accessory?.hpBonus || 0);
+      const nextMaxHp = 180 + prev.stats.vit * 25 + totalEquipHp;
+
+      return {
+        ...prev,
+        equipment: nextEquipment,
+        inventory: nextInventory,
+        maxHp: nextMaxHp,
+        hp: Math.min(nextMaxHp, Math.max(1, prev.hp + (nextMaxHp - prev.maxHp))),
+      };
+    });
+
+    setShowSwapEquipModal(false);
+    if (currentEquip) {
+      const cardMsg = currentEquip.slottedCard ? '（插槽卡片已自动继承）' : '';
+      setRefineFeedback(`已将【${currentEquip.name}】替换为【${targetItem.name}】，原装备已放回背包${cardMsg}！`);
+    } else {
+      setRefineFeedback(`成功穿戴【${targetItem.name}】！`);
+    }
+    setTimeout(() => setRefineFeedback(null), 2800);
+  };
 
   // Allocate Stat point
   const handleAddStat = (stat: StatType) => {
@@ -267,12 +340,7 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
           {(['weapon', 'armor', 'headgear', 'accessory'] as const).map((slot) => {
             const item = profile.equipment[slot];
             const isSelected = selectedSlot === slot;
-            const slotLabels = {
-              weapon: '武器',
-              armor: '铠甲',
-              headgear: '头饰',
-              accessory: '饰品',
-            };
+            const standbyForSlot = profile.inventory.filter((i) => i.slot === slot);
 
             return (
               <button
@@ -281,15 +349,23 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
                   soundManager.playClick();
                   setSelectedSlot(slot);
                 }}
-                className={`flex flex-col items-center p-2.5 md:p-3 rounded-2xl border-2 transition-all ${
+                className={`relative flex flex-col items-center p-2.5 md:p-3 rounded-2xl border-2 transition-all ${
                   isSelected
                     ? 'border-sky-500 bg-sky-950/50 shadow-md shadow-sky-950/40'
                     : 'border-slate-800 bg-slate-800/40 hover:border-slate-700'
                 }`}
               >
+                {standbyForSlot.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-950/90 border border-emerald-700/80 text-emerald-300">
+                    可换{standbyForSlot.length}
+                  </span>
+                )}
                 <div className="text-2xl md:text-3xl mb-1">{item?.icon || '📦'}</div>
                 <span className="text-[11px] md:text-xs font-bold text-slate-200">
                   {slotLabels[slot]}
+                </span>
+                <span className="text-[10px] text-slate-400 truncate max-w-full mt-0.5">
+                  {item?.name || '未装备'}
                 </span>
                 {item && item.refineLevel > 0 && (
                   <span className="text-[9px] md:text-[10px] font-black text-amber-300 bg-amber-950/80 border border-amber-850 px-1 rounded-sm mt-0.5">
@@ -304,13 +380,19 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
         {/* Selected Slot Detailed Panel */}
         {currentEquippedItem ? (
           <div className="bg-slate-800/80 rounded-2xl p-3.5 md:p-4 border border-slate-700/80 space-y-3.5">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-2">
               <div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap">
                   <span className="text-xl md:text-2xl">{currentEquippedItem.icon}</span>
                   <span className="font-black text-slate-100 text-sm md:text-base">
                     {currentEquippedItem.refineLevel > 0 ? `+${currentEquippedItem.refineLevel} ` : ''}
                     {currentEquippedItem.name}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-950/80 border border-emerald-800/70 text-emerald-300">
+                    当前穿戴
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-950/80 border border-sky-800/70 text-sky-300 uppercase">
+                    {currentEquippedItem.rarity}
                   </span>
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
@@ -318,12 +400,17 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
                 </div>
               </div>
 
-              {/* Refinement Level Badge */}
-              <div className="text-right">
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-950/80 border border-sky-800/70 text-sky-300 uppercase">
-                  {currentEquippedItem.rarity}
-                </span>
-              </div>
+              {/* Swap Equipment Button */}
+              <button
+                onClick={() => {
+                  soundManager.playClick();
+                  setShowSwapEquipModal(true);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 active:scale-95 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1 shrink-0"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>更换{slotLabels[selectedSlot]}</span>
+              </button>
             </div>
 
             {/* Current Attributes */}
@@ -413,6 +500,65 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
               </button>
             </div>
 
+            {/* Quick Standby Equipment List for Current Slot */}
+            {(() => {
+              const standbyItems = profile.inventory.filter((i) => i.slot === selectedSlot);
+              return (
+                <div className="pt-2.5 border-t border-slate-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs md:text-sm font-bold text-slate-200 flex items-center gap-1">
+                      <Package className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>背包备选{slotLabels[selectedSlot]} ({standbyItems.length} 件可替换)</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      替换后原装备将自动退回背包
+                    </span>
+                  </div>
+                  {standbyItems.length === 0 ? (
+                    <div className="text-[11px] text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-dashed border-slate-700 text-center">
+                      当前部位暂无其他备选{slotLabels[selectedSlot]}，通关地图讨伐BOSS可收集更多神装！
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {standbyItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="bg-slate-900/80 border border-slate-700/80 hover:border-sky-500/70 rounded-xl p-2.5 flex items-center justify-between gap-2 transition-all"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xl shrink-0">{item.icon}</span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className="font-bold text-xs text-slate-100 truncate">
+                                  {item.refineLevel > 0 ? `+${item.refineLevel} ` : ''}
+                                  {item.name}
+                                </span>
+                                <span className="text-[9px] uppercase px-1.5 py-0.2 rounded-sm bg-sky-950 text-sky-300 border border-sky-800/60 font-bold">
+                                  {item.rarity}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 text-[10px] text-slate-400 mt-0.5">
+                                {item.atkBonus && <span className="text-rose-300">ATK+{item.atkBonus}</span>}
+                                {item.defBonus && <span className="text-blue-300">DEF+{item.defBonus}</span>}
+                                {item.hpBonus && <span className="text-emerald-300">HP+{item.hpBonus}</span>}
+                                {item.critBonus && <span className="text-amber-300">CRIT+{item.critBonus}%</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleEquipItem(item)}
+                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[11px] font-bold rounded-lg shrink-0 transition-all shadow-xs"
+                          >
+                            替换穿戴
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {refineFeedback && (
               <div className="text-xs text-center font-bold text-purple-300 bg-purple-950/80 border border-purple-800/80 p-2 rounded-xl animate-bounce">
                 {refineFeedback}
@@ -423,6 +569,255 @@ export const EquipmentScreen: React.FC<EquipmentScreenProps> = ({
           <div className="text-xs text-slate-400 text-center py-6">未装备</div>
         )}
       </div>
+
+      {/* RO Equipment Collection Codex */}
+      {(() => {
+        const ownedById = new Map<string, { item: Equipment; isEquipped: boolean }>();
+        (['weapon', 'armor', 'headgear', 'accessory'] as const).forEach((s) => {
+          const eq = profile.equipment[s];
+          if (eq) ownedById.set(eq.id, { item: eq, isEquipped: true });
+        });
+        profile.inventory.forEach((inv) => {
+          if (inv && !ownedById.has(inv.id)) {
+            ownedById.set(inv.id, { item: inv, isEquipped: false });
+          }
+        });
+
+        const totalCollectible = ALL_RO_EQUIPMENT.length;
+        const collectedCount = ALL_RO_EQUIPMENT.filter((e) => ownedById.has(e.id)).length;
+        const filteredCatalog =
+          collectionFilter === 'all'
+            ? ALL_RO_EQUIPMENT
+            : ALL_RO_EQUIPMENT.filter((e) => e.slot === collectionFilter);
+
+        return (
+          <div className="bg-slate-900 rounded-3xl p-4 md:p-5 shadow-md border border-slate-800 space-y-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800">
+              <div>
+                <h4 className="font-black text-slate-100 text-sm md:text-base flex items-center gap-1.5">
+                  <Package className="w-4 h-4 text-amber-400" />
+                  <span>RO 神装收集图鉴</span>
+                  <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-800/70 text-amber-300">
+                    已收集 {collectedCount} / {totalCollectible}
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  击败各大陆关底 BOSS 即可收集全新神装，已收集装备可随时一键替换穿戴（原装备自动退回背包）
+                </p>
+              </div>
+
+              {/* Slot Filter Pills */}
+              <div className="flex items-center gap-1 flex-wrap">
+                {(
+                  [
+                    { key: 'all', label: '全部' },
+                    { key: 'weapon', label: '武器' },
+                    { key: 'armor', label: '铠甲' },
+                    { key: 'headgear', label: '头饰' },
+                    { key: 'accessory', label: '饰品' },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => {
+                      soundManager.playClick();
+                      setCollectionFilter(tab.key);
+                    }}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                      collectionFilter === tab.key
+                        ? 'bg-sky-600 text-white shadow-xs'
+                        : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {filteredCatalog.map((catalogItem) => {
+                const ownedInfo = ownedById.get(catalogItem.id);
+                const isCollected = !!ownedInfo;
+                const isEquipped = !!ownedInfo?.isEquipped;
+                const displayItem = ownedInfo?.item || catalogItem;
+
+                const rarityBadge = {
+                  normal: 'bg-slate-800 text-slate-300 border-slate-700',
+                  refined: 'bg-sky-950/90 text-sky-300 border-sky-800/80',
+                  epic: 'bg-purple-950/90 text-purple-300 border-purple-800/80',
+                  godly: 'bg-amber-950/90 text-amber-300 border-amber-700/80',
+                }[displayItem.rarity];
+
+                return (
+                  <div
+                    key={catalogItem.id}
+                    className={`rounded-2xl p-3 border transition-all flex flex-col justify-between gap-2 ${
+                      isEquipped
+                        ? 'bg-emerald-950/25 border-emerald-600/70 shadow-xs'
+                        : isCollected
+                        ? 'bg-slate-800/80 border-slate-700 hover:border-sky-500/60'
+                        : 'bg-slate-900/50 border-slate-800/80 opacity-55'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-xl shrink-0">
+                          {displayItem.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-black text-xs md:text-sm text-slate-100">
+                              {displayItem.refineLevel > 0 ? `+${displayItem.refineLevel} ` : ''}
+                              {displayItem.name}
+                            </span>
+                            <span className={`text-[9px] uppercase font-extrabold px-1.5 py-0.2 rounded-md border ${rarityBadge}`}>
+                              {displayItem.rarity}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-semibold">
+                              [{slotLabels[displayItem.slot]}]
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                            {displayItem.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/80 gap-2">
+                      <div className="flex flex-wrap gap-1.5 text-[10px] font-bold">
+                        {displayItem.atkBonus && (
+                          <span className="text-rose-300 bg-rose-950/60 px-1.5 py-0.5 rounded">
+                            ATK+{displayItem.atkBonus}
+                          </span>
+                        )}
+                        {displayItem.defBonus && (
+                          <span className="text-blue-300 bg-blue-950/60 px-1.5 py-0.5 rounded">
+                            DEF+{displayItem.defBonus}
+                          </span>
+                        )}
+                        {displayItem.hpBonus && (
+                          <span className="text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded">
+                            HP+{displayItem.hpBonus}
+                          </span>
+                        )}
+                        {displayItem.critBonus && (
+                          <span className="text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded">
+                            CRIT+{displayItem.critBonus}%
+                          </span>
+                        )}
+                      </div>
+
+                      {isEquipped ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-950/90 border border-emerald-700 text-emerald-300 text-[11px] font-extrabold shrink-0 flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          <span>穿戴中</span>
+                        </span>
+                      ) : isCollected ? (
+                        <button
+                          onClick={() => handleEquipItem(displayItem)}
+                          className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 active:scale-95 text-white text-[11px] font-bold shrink-0 transition-all shadow-xs"
+                        >
+                          替换穿戴
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 font-semibold shrink-0">
+                          🔒 讨伐BOSS掉落
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Swap Equipment Modal for Selected Slot */}
+      {showSwapEquipModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl p-5 max-w-sm md:max-w-md w-full shadow-2xl border border-slate-800 animate-scaleUp">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+              <h4 className="font-black text-slate-100 text-sm md:text-base flex items-center gap-1.5">
+                <RefreshCw className="w-4 h-4 text-sky-400" />
+                <span>更换{slotLabels[selectedSlot]} (替换后原装备退回背包)</span>
+              </h4>
+              <button
+                onClick={() => setShowSwapEquipModal(false)}
+                className="text-slate-400 hover:text-slate-200 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {currentEquippedItem && (
+              <div className="mb-3 p-2.5 rounded-xl bg-slate-800/90 border border-emerald-700/60 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{currentEquippedItem.icon}</span>
+                  <div>
+                    <div className="text-slate-200 font-bold">
+                      当前穿戴: {currentEquippedItem.refineLevel > 0 ? `+${currentEquippedItem.refineLevel} ` : ''}
+                      {currentEquippedItem.name}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      选择下方装备将直接替换，当前装备与精炼等级完整保留在背包中
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(() => {
+              const slotStandby = profile.inventory.filter((i) => i.slot === selectedSlot);
+              if (slotStandby.length === 0) {
+                return (
+                  <div className="text-center py-6 text-slate-400 text-xs">
+                    背包中暂无其他已收集的{slotLabels[selectedSlot]}，前往世界地图讨伐关底BOSS即可收集！
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {slotStandby.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleEquipItem(item)}
+                      className="w-full text-left p-3 rounded-xl border border-slate-700 hover:border-sky-500 bg-slate-800/60 hover:bg-slate-800 transition-all flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-2xl shrink-0">{item.icon}</span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs md:text-sm text-slate-100 flex items-center gap-1.5">
+                            <span>
+                              {item.refineLevel > 0 ? `+${item.refineLevel} ` : ''}
+                              {item.name}
+                            </span>
+                            <span className="text-[9px] uppercase bg-sky-950 text-sky-300 border border-sky-800 px-1.5 py-0.2 rounded-sm">
+                              {item.rarity}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-[11px] text-slate-400 mt-1">
+                            {item.atkBonus && <span className="text-rose-300">攻击+{item.atkBonus}</span>}
+                            {item.defBonus && <span className="text-blue-300">防御+{item.defBonus}</span>}
+                            {item.hpBonus && <span className="text-emerald-300">生命+{item.hpBonus}</span>}
+                            {item.critBonus && <span className="text-amber-300">暴击+{item.critBonus}%</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-sky-600 text-white text-xs font-bold shrink-0 flex items-center gap-1">
+                        <span>替换</span>
+                        <Check className="w-3.5 h-3.5" />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Socket Card Modal */}
       {showSocketModal && (

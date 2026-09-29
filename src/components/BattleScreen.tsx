@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useTransition } from 'react';
 import { Volume2, Zap, Shield, Flame, Award, ArrowRight, RefreshCw, Eye, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { GameMap, Monster, WordItem, PlayerProfile, DamagePopup, RoguelitePerk, CardItem, Equipment } from '../types/game';
-import { ROGUELITE_PERKS, ALL_RO_CARDS } from '../data/words';
+import { ROGUELITE_PERKS, ALL_RO_CARDS, ALL_RO_EQUIPMENT } from '../data/words';
 import { MonsterAvatar } from './MonsterAvatar';
 import { soundManager } from '../audio/soundManager';
 import { getWordMastery, getMasteryLabel, getMasteryColor, recordWordAnswer } from '../utils/wordMastery';
@@ -496,19 +496,20 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
       soundManager.playRareDrop();
     }
 
-    // Refined equipment drop
-    droppedGear = {
-      id: `drop_${Date.now()}`,
-      name: `${map.name.slice(0, 4)}守卫法袍`,
-      slot: 'armor',
-      rarity: 'epic',
-      refineLevel: 1,
-      hpBonus: 120,
-      defBonus: 15,
-      description: `从${map.boss.name}身上获取的战利品，散发着优雅的圣洁微光。`,
-      icon: '🛡️',
-      slottedCard: null,
-    };
+    // Collectible equipment drop (prioritizes unowned equipment across all 4 slots)
+    const isEquipOwned = (eqId: string) =>
+      Object.values(profile.equipment).some((e) => e?.id === eqId) ||
+      profile.inventory.some((e) => e.id === eqId);
+
+    const unownedEquips = ALL_RO_EQUIPMENT.filter((e) => !isEquipOwned(e.id));
+    if (unownedEquips.length > 0) {
+      const picked = unownedEquips[Math.floor(Math.random() * unownedEquips.length)];
+      droppedGear = { ...picked, slottedCard: null };
+    } else {
+      const fallbackPool = ALL_RO_EQUIPMENT.filter((e) => e.rarity === 'epic' || e.rarity === 'godly');
+      const picked = fallbackPool[Math.floor(Math.random() * fallbackPool.length)] || ALL_RO_EQUIPMENT[0];
+      droppedGear = { ...picked, slottedCard: null };
+    }
 
     setDroppedCard(droppedCrd);
     setDroppedItem(droppedGear);
@@ -540,7 +541,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         ? prev.defeatedBosses
         : [...prev.defeatedBosses, map.boss.id];
 
-      const newInventory = droppedGear ? [...prev.inventory, droppedGear] : prev.inventory;
+      const alreadyHasDroppedGear =
+        droppedGear &&
+        (prev.inventory.some((e) => e.id === droppedGear?.id) ||
+          Object.values(prev.equipment).some((e) => e?.id === droppedGear?.id));
+      const newInventory =
+        droppedGear && !alreadyHasDroppedGear
+          ? [...prev.inventory, droppedGear]
+          : prev.inventory;
       const alreadyHasDroppedCard =
         droppedCrd &&
         (prev.cards.some((c) => c.id === droppedCrd?.id) ||

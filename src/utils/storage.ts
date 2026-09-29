@@ -2,7 +2,7 @@
  * Multi-User Game Persistence Manager using LocalStorage
  */
 import { PlayerProfile, WordItem, UserAccount } from '../types/game';
-import { INITIAL_EQUIPMENT, ALL_RO_CARDS, GAME_MAPS } from '../data/words';
+import { INITIAL_EQUIPMENT, ALL_RO_CARDS, ALL_RO_EQUIPMENT, GAME_MAPS } from '../data/words';
 import { ALL_UNIFIED_WORDS } from '../data/shanghaiWords';
 import { sanitizeWordItem } from './wordHelpers';
 
@@ -219,7 +219,56 @@ function hydrateUserProfile(user: UserAccount): boolean {
     }
   }
 
-  // If the user has imported a full custom word library (e.g., 1785 words) alongside the old 201 default words,
+  // 3. Hydrate and normalize equipment inventory (convert legacy `drop_*` items into distinct ALL_RO_EQUIPMENT items)
+  if (!Array.isArray(user.profile.inventory)) {
+    user.profile.inventory = [];
+    modified = true;
+  }
+  const equippedIds = new Set(
+    Object.values(user.profile.equipment || {})
+      .map((eq) => eq?.id)
+      .filter(Boolean) as string[]
+  );
+  const normalizedInventory: typeof user.profile.inventory = [];
+  const seenInvIds = new Set<string>(equippedIds);
+
+  for (const item of user.profile.inventory) {
+    if (!item) continue;
+    if (item.id.startsWith('drop_')) {
+      // Convert legacy generated drop into an unowned ALL_RO_EQUIPMENT piece
+      const replacement =
+        ALL_RO_EQUIPMENT.find((e) => e.id === 'a_solace_robe' && !seenInvIds.has(e.id)) ||
+        ALL_RO_EQUIPMENT.find((e) => !seenInvIds.has(e.id));
+      if (replacement) {
+        normalizedInventory.push({
+          ...replacement,
+          refineLevel: Math.max(replacement.refineLevel, item.refineLevel || 0),
+          slottedCard: item.slottedCard || null,
+        });
+        seenInvIds.add(replacement.id);
+      }
+      modified = true;
+    } else if (!seenInvIds.has(item.id)) {
+      normalizedInventory.push(item);
+      seenInvIds.add(item.id);
+    } else {
+      modified = true;
+    }
+  }
+
+  // Ensure starter inventory items (w_wooden_bow, h_bunny_band) and initial 4 equips are never lost
+  const starterIds = ['w_novice_knife', 'a_cotton_shirt', 'h_egg_cap', 'acc_novice_ring', 'w_wooden_bow', 'h_bunny_band'];
+  for (const sid of starterIds) {
+    if (!seenInvIds.has(sid)) {
+      const def = ALL_RO_EQUIPMENT.find((e) => e.id === sid);
+      if (def) {
+        normalizedInventory.push({ ...def, slottedCard: null });
+        seenInvIds.add(sid);
+        modified = true;
+      }
+    }
+  }
+  user.profile.inventory = normalizedInventory;
   // remove the old 201 default words so only the user's current library remains as the initial baseline.
   const learnedEntries = Object.values(user.profile.learnedWords);
   const customEntries = learnedEntries.filter(
